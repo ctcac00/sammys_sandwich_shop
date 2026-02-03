@@ -1,0 +1,7 @@
+supplier_id,supplier_name,contact_name,email,phone,address,city,state,zip_code,payment_terms,lead_time_days,is_active
+SUP001,Austin Artisan Bakery,Tom Baker,tom@austinartisan.com,512-555-3001,100 Bakery Lane,Austin,TX,78701,Net 15,1,TRUE
+SUP002,Texas Premium Meats,Carlos Delgado,carlos@txmeats.com,512-555-3002,200 Butcher Blvd,Round Rock,TX,78664,Net 30,2,TRUE
+SUP003,Hill Country Dairy,Sarah Creamery,sarah@hcdairy.com,512-555-3003,300 Dairy Road,Dripping Springs,TX,78620,Net 15,1,TRUE
+SUP004,Fresh Farm Produce,Miguel Verde,miguel@freshfarm.com,512-555-3004,400 Farm Way,Bastrop,TX,78602,Net 7,1,TRUE
+SUP005,Condiment Kings,Lisa Sauce,lisa@condimentkings.com,512-555-3005,500 Sauce Street,San Marcos,TX,78666,Net 30,3,TRUE
+SUP006,Beverage Distributors Inc,Mark Drinks,mark@bevdist.com,512-555-3006,600 Beverage Blvd,Austin,TX,78748,Net 30,2,TRUE

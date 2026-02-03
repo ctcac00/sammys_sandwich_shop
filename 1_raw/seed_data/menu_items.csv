@@ -1,0 +1,31 @@
+item_id,item_name,category,subcategory,description,base_price,is_active,is_seasonal,calories,prep_time_minutes,introduced_date
+ITEM001,Classic Club,Sandwich,Signature,Triple-decker with turkey bacon and avocado on sourdough,12.99,TRUE,FALSE,720,5,2020-03-15
+ITEM002,Italian Sub,Sandwich,Signature,Salami capicola ham provolone with Italian dressing,11.99,TRUE,FALSE,850,4,2020-03-15
+ITEM003,Veggie Delight,Sandwich,Vegetarian,Fresh vegetables with hummus and feta on multigrain,9.99,TRUE,FALSE,420,4,2020-03-15
+ITEM004,Turkey Avocado,Sandwich,Premium,Sliced turkey breast with fresh avocado and sprouts,11.49,TRUE,FALSE,580,4,2020-03-15
+ITEM005,BLT Supreme,Sandwich,Classic,Thick-cut bacon lettuce tomato with garlic aioli,10.49,TRUE,FALSE,650,3,2020-03-15
+ITEM006,Chicken Pesto,Sandwich,Premium,Grilled chicken with basil pesto and mozzarella,12.49,TRUE,FALSE,680,5,2020-06-01
+ITEM007,Philly Cheesesteak,Sandwich,Hot,Shaved ribeye with peppers onions and cheese whiz,13.99,TRUE,FALSE,920,6,2020-06-01
+ITEM008,Tuna Melt,Sandwich,Classic,House-made tuna salad with melted cheddar,10.99,TRUE,FALSE,590,4,2020-03-15
+ITEM009,Reuben,Sandwich,Classic,Corned beef sauerkraut swiss and thousand island on rye,12.49,TRUE,FALSE,780,5,2020-03-15
+ITEM010,Caprese,Sandwich,Vegetarian,Fresh mozzarella tomato basil with balsamic glaze,10.49,TRUE,FALSE,450,3,2020-06-01
+ITEM011,BBQ Pulled Pork,Sandwich,Hot,Slow-smoked pulled pork with tangy BBQ sauce and slaw,12.99,TRUE,FALSE,820,4,2021-01-15
+ITEM012,Greek Wrap,Wrap,Mediterranean,Grilled chicken feta olives cucumber in spinach wrap,11.49,TRUE,FALSE,520,4,2021-03-01
+ITEM013,Buffalo Chicken Wrap,Wrap,Spicy,Crispy chicken with buffalo sauce blue cheese and celery,11.99,TRUE,FALSE,680,5,2021-03-01
+ITEM014,Caesar Wrap,Wrap,Classic,Grilled chicken romaine parmesan with caesar dressing,10.99,TRUE,FALSE,540,4,2021-03-01
+ITEM015,Southwest Veggie Wrap,Wrap,Vegetarian,Black beans corn peppers with chipotle ranch,10.49,TRUE,FALSE,480,4,2021-06-01
+ITEM016,Garden Salad,Salad,Side,Mixed greens tomatoes cucumber carrots with choice of dressing,6.99,TRUE,FALSE,150,2,2020-03-15
+ITEM017,Caesar Salad,Salad,Side,Romaine hearts parmesan croutons with classic caesar,7.99,TRUE,FALSE,320,2,2020-03-15
+ITEM018,Greek Salad,Salad,Mediterranean,Cucumber tomato olives feta red onion with oregano vinaigrette,8.99,TRUE,FALSE,280,3,2020-06-01
+ITEM019,Tomato Soup,Soup,Hot,Creamy tomato basil soup,4.99,TRUE,FALSE,220,1,2020-03-15
+ITEM020,Chicken Noodle Soup,Soup,Hot,Classic chicken soup with egg noodles and vegetables,5.49,TRUE,FALSE,180,1,2020-03-15
+ITEM021,Chips,Side,Snack,Kettle-cooked potato chips,2.49,TRUE,FALSE,280,0,2020-03-15
+ITEM022,Cookie,Side,Dessert,Fresh-baked chocolate chip cookie,2.99,TRUE,FALSE,350,0,2020-03-15
+ITEM023,Brownie,Side,Dessert,Rich fudge brownie,3.49,TRUE,FALSE,420,0,2020-03-15
+ITEM024,Soft Drink,Beverage,Cold,Fountain drink - small medium or large,2.49,TRUE,FALSE,150,0,2020-03-15
+ITEM025,Iced Tea,Beverage,Cold,Fresh-brewed unsweetened or sweet,2.49,TRUE,FALSE,90,0,2020-03-15
+ITEM026,Lemonade,Beverage,Cold,House-made fresh lemonade,2.99,TRUE,FALSE,180,0,2020-06-01
+ITEM027,Coffee,Beverage,Hot,Fresh-brewed drip coffee,2.29,TRUE,FALSE,5,0,2020-03-15
+ITEM028,Hot Chocolate,Beverage,Hot,Rich hot chocolate with whipped cream,3.49,TRUE,TRUE,320,1,2020-11-01
+ITEM029,Pumpkin Spice Panini,Sandwich,Seasonal,Turkey with pumpkin cream cheese cranberry on ciabatta,13.49,TRUE,TRUE,620,5,2023-10-01
+ITEM030,Summer Caprese Salad,Salad,Seasonal,Heirloom tomatoes burrata fresh basil with aged balsamic,10.99,TRUE,TRUE,380,3,2024-06-01

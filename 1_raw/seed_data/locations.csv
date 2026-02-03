@@ -1,0 +1,6 @@
+location_id,location_name,address,city,state,zip_code,phone,manager_employee_id,open_date,seating_capacity,has_drive_thru
+LOC001,Sammy's Downtown,123 Main Street,Austin,TX,78701,512-555-0101,EMP001,2020-03-15,45,FALSE
+LOC002,Sammy's Westlake,456 Bee Cave Road,Austin,TX,78746,512-555-0102,EMP006,2021-06-01,60,TRUE
+LOC003,Sammy's University,789 Guadalupe St,Austin,TX,78705,512-555-0103,EMP011,2022-01-10,35,FALSE
+LOC004,Sammy's Mueller,321 Mueller Blvd,Austin,TX,78723,512-555-0104,EMP016,2023-04-20,50,TRUE
+LOC005,Sammy's Domain,555 Domain Drive,Austin,TX,78758,512-555-0105,EMP021,2024-02-01,55,TRUE

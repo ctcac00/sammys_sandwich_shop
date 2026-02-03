@@ -1,0 +1,26 @@
+customer_id,first_name,last_name,email,phone,address,city,state,zip_code,birth_date,signup_date,loyalty_tier,loyalty_points,preferred_location,marketing_opt_in
+CUST001,Emma,Johnson,emma.johnson@email.com,512-555-1001,100 Oak Lane,Austin,TX,78701,1985-03-15,2020-04-01,Gold,2450,LOC001,TRUE
+CUST002,Liam,Williams,liam.w@email.com,512-555-1002,200 Pine Street,Austin,TX,78702,1990-07-22,2020-05-15,Silver,1200,LOC001,TRUE
+CUST003,Olivia,Brown,olivia.brown@email.com,512-555-1003,300 Cedar Ave,Austin,TX,78703,1988-11-30,2020-06-20,Bronze,450,LOC002,FALSE
+CUST004,Noah,Jones,noah.jones@email.com,512-555-1004,400 Maple Dr,Austin,TX,78704,1995-01-08,2021-01-10,Gold,3100,LOC002,TRUE
+CUST005,Ava,Garcia,ava.garcia@email.com,512-555-1005,500 Elm Street,Austin,TX,78705,1992-05-14,2021-03-25,Silver,890,LOC003,TRUE
+CUST006,Ethan,Miller,ethan.m@email.com,512-555-1006,600 Birch Lane,Austin,TX,78746,1987-09-03,2021-07-12,Platinum,5200,LOC002,TRUE
+CUST007,Sophia,Davis,sophia.d@email.com,512-555-1007,700 Willow Way,Austin,TX,78723,1993-12-19,2021-08-30,Bronze,320,LOC004,FALSE
+CUST008,Mason,Rodriguez,mason.r@email.com,512-555-1008,800 Spruce St,Austin,TX,78758,1991-04-27,2022-02-14,Gold,2800,LOC005,TRUE
+CUST009,Isabella,Martinez,isabella.m@email.com,512-555-1009,900 Cypress Ct,Austin,TX,78701,1989-08-11,2022-05-01,Silver,1100,LOC001,TRUE
+CUST010,William,Anderson,will.anderson@email.com,512-555-1010,1000 Redwood Rd,Austin,TX,78702,1994-02-28,2022-06-18,Bronze,275,LOC001,FALSE
+CUST011,Mia,Taylor,mia.taylor@email.com,512-555-1011,1100 Sequoia St,Austin,TX,78703,1986-06-07,2022-09-05,Gold,2100,LOC002,TRUE
+CUST012,James,Thomas,james.t@email.com,512-555-1012,1200 Aspen Ave,Austin,TX,78704,1997-10-23,2023-01-20,Silver,780,LOC003,TRUE
+CUST013,Charlotte,Hernandez,charlotte.h@email.com,512-555-1013,1300 Magnolia Ln,Austin,TX,78705,1990-03-16,2023-04-08,Platinum,4800,LOC003,TRUE
+CUST014,Benjamin,Moore,ben.moore@email.com,512-555-1014,1400 Dogwood Dr,Austin,TX,78746,1988-07-29,2023-06-22,Bronze,180,LOC004,FALSE
+CUST015,Amelia,Jackson,amelia.j@email.com,512-555-1015,1500 Cherry Ln,Austin,TX,78723,1996-11-12,2023-08-15,Gold,1950,LOC004,TRUE
+CUST016,Lucas,Martin,lucas.m@email.com,512-555-1016,1600 Pecan St,Austin,TX,78758,1993-01-05,2023-10-30,Silver,650,LOC005,TRUE
+CUST017,Harper,Lee,harper.lee@email.com,512-555-1017,1700 Walnut Way,Austin,TX,78701,1991-05-18,2024-01-12,Bronze,120,LOC001,TRUE
+CUST018,Henry,White,henry.w@email.com,512-555-1018,1800 Hickory Rd,Austin,TX,78702,1989-09-24,2024-02-28,Silver,420,LOC002,FALSE
+CUST019,Evelyn,Harris,evelyn.h@email.com,512-555-1019,1900 Poplar Pl,Austin,TX,78703,1994-12-08,2024-04-15,Bronze,85,LOC003,TRUE
+CUST020,Alexander,Clark,alex.clark@email.com,512-555-1020,2000 Sycamore St,Austin,TX,78704,1987-04-01,2024-05-20,Gold,1500,LOC004,TRUE
+CUST021,Abigail,Lewis,abigail.l@email.com,512-555-1021,2100 Chestnut Ct,Austin,TX,78705,1992-08-14,2024-06-10,Bronze,50,LOC005,FALSE
+CUST022,Michael,Robinson,michael.r@email.com,512-555-1022,2200 Acacia Ave,Austin,TX,78746,1985-11-27,2020-04-05,Platinum,6100,LOC002,TRUE
+CUST023,Emily,Walker,emily.w@email.com,512-555-1023,2300 Juniper Ln,Austin,TX,78723,1998-03-09,2021-02-18,Gold,2650,LOC004,TRUE
+CUST024,Daniel,Hall,daniel.h@email.com,512-555-1024,2400 Fir Dr,Austin,TX,78758,1990-06-21,2021-11-08,Silver,920,LOC005,TRUE
+CUST025,Elizabeth,Young,liz.young@email.com,512-555-1025,2500 Palm St,Austin,TX,78701,1986-10-03,2022-03-25,Gold,2200,LOC001,TRUE

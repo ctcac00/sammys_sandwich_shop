@@ -1,0 +1,51 @@
+ingredient_id,ingredient_name,category,unit_of_measure,cost_per_unit,supplier_id,is_allergen,allergen_type,shelf_life_days,storage_type
+ING001,Sourdough Bread,Bread,loaf,2.50,SUP001,TRUE,Gluten,3,Room Temperature
+ING002,Multigrain Bread,Bread,loaf,2.75,SUP001,TRUE,Gluten,3,Room Temperature
+ING003,Italian Hoagie Roll,Bread,roll,0.85,SUP001,TRUE,Gluten,2,Room Temperature
+ING004,Rye Bread,Bread,loaf,2.60,SUP001,TRUE,Gluten,3,Room Temperature
+ING005,Ciabatta Roll,Bread,roll,0.95,SUP001,TRUE,Gluten,2,Room Temperature
+ING006,Spinach Wrap,Bread,wrap,0.65,SUP001,TRUE,Gluten,5,Refrigerated
+ING007,Turkey Breast,Protein,pound,8.50,SUP002,FALSE,NULL,5,Refrigerated
+ING008,Salami,Protein,pound,9.00,SUP002,FALSE,NULL,14,Refrigerated
+ING009,Capicola,Protein,pound,10.50,SUP002,FALSE,NULL,14,Refrigerated
+ING010,Ham,Protein,pound,7.50,SUP002,FALSE,NULL,7,Refrigerated
+ING011,Bacon,Protein,pound,8.00,SUP002,FALSE,NULL,7,Refrigerated
+ING012,Corned Beef,Protein,pound,12.00,SUP002,FALSE,NULL,5,Refrigerated
+ING013,Grilled Chicken,Protein,pound,7.00,SUP002,FALSE,NULL,3,Refrigerated
+ING014,Pulled Pork,Protein,pound,9.50,SUP002,FALSE,NULL,4,Refrigerated
+ING015,Ribeye Steak,Protein,pound,14.00,SUP002,FALSE,NULL,3,Refrigerated
+ING016,Tuna Salad,Protein,pound,8.00,SUP002,TRUE,Fish,2,Refrigerated
+ING017,Provolone Cheese,Dairy,pound,6.50,SUP003,TRUE,Dairy,21,Refrigerated
+ING018,Swiss Cheese,Dairy,pound,7.00,SUP003,TRUE,Dairy,21,Refrigerated
+ING019,Cheddar Cheese,Dairy,pound,6.00,SUP003,TRUE,Dairy,21,Refrigerated
+ING020,Mozzarella,Dairy,pound,6.50,SUP003,TRUE,Dairy,14,Refrigerated
+ING021,Feta Cheese,Dairy,pound,8.00,SUP003,TRUE,Dairy,14,Refrigerated
+ING022,Parmesan,Dairy,pound,10.00,SUP003,TRUE,Dairy,30,Refrigerated
+ING023,Lettuce,Produce,head,1.50,SUP004,FALSE,NULL,5,Refrigerated
+ING024,Tomato,Produce,pound,2.00,SUP004,FALSE,NULL,5,Refrigerated
+ING025,Onion,Produce,pound,1.00,SUP004,FALSE,NULL,14,Room Temperature
+ING026,Avocado,Produce,each,1.75,SUP004,FALSE,NULL,4,Room Temperature
+ING027,Cucumber,Produce,each,0.75,SUP004,FALSE,NULL,7,Refrigerated
+ING028,Bell Pepper,Produce,each,1.00,SUP004,FALSE,NULL,7,Refrigerated
+ING029,Sprouts,Produce,container,2.50,SUP004,FALSE,NULL,3,Refrigerated
+ING030,Basil,Produce,bunch,2.00,SUP004,FALSE,NULL,5,Refrigerated
+ING031,Olives,Produce,jar,4.50,SUP004,FALSE,NULL,180,Room Temperature
+ING032,Sauerkraut,Condiment,jar,3.50,SUP005,FALSE,NULL,60,Refrigerated
+ING033,Hummus,Condiment,container,4.00,SUP005,TRUE,Sesame,7,Refrigerated
+ING034,Pesto,Condiment,jar,5.50,SUP005,TRUE,Tree Nuts,14,Refrigerated
+ING035,Mayonnaise,Condiment,gallon,8.00,SUP005,TRUE,Eggs,30,Refrigerated
+ING036,Mustard,Condiment,gallon,6.00,SUP005,FALSE,NULL,180,Room Temperature
+ING037,Italian Dressing,Condiment,bottle,3.50,SUP005,FALSE,NULL,90,Refrigerated
+ING038,Caesar Dressing,Condiment,bottle,4.00,SUP005,TRUE,Fish,30,Refrigerated
+ING039,Ranch Dressing,Condiment,bottle,3.50,SUP005,TRUE,Dairy,30,Refrigerated
+ING040,BBQ Sauce,Condiment,bottle,3.00,SUP005,FALSE,NULL,180,Room Temperature
+ING041,Buffalo Sauce,Condiment,bottle,3.50,SUP005,FALSE,NULL,180,Room Temperature
+ING042,Thousand Island,Condiment,bottle,3.50,SUP005,TRUE,Eggs,30,Refrigerated
+ING043,Black Beans,Canned,can,1.25,SUP005,FALSE,NULL,365,Room Temperature
+ING044,Corn,Canned,can,1.00,SUP005,FALSE,NULL,365,Room Temperature
+ING045,Potato Chips,Snack,bag,0.75,SUP006,FALSE,NULL,90,Room Temperature
+ING046,Chocolate Chip Cookie,Bakery,each,0.85,SUP001,TRUE,Gluten,3,Room Temperature
+ING047,Brownie,Bakery,each,1.00,SUP001,TRUE,Gluten,3,Room Temperature
+ING048,Soft Drink Syrup,Beverage,gallon,15.00,SUP006,FALSE,NULL,180,Room Temperature
+ING049,Tea Bags,Beverage,box,8.00,SUP006,FALSE,NULL,365,Room Temperature
+ING050,Coffee Beans,Beverage,pound,12.00,SUP006,FALSE,NULL,30,Room Temperature
