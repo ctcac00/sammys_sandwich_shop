@@ -10,8 +10,16 @@ Usage:
     export SNOWFLAKE_USER="your_username"
     export SNOWFLAKE_PASSWORD="your_password"
     
-    # Full setup (creates everything and loads data)
+    # Authentication options (via SNOWFLAKE_AUTHENTICATOR):
+    #   - Default (no setting): password + Duo/MFA push notification
+    #   - externalbrowser: opens browser for SSO
+    #   - snowflake: basic password auth (no MFA)
+    
+    # Interactive setup (prompts before each step)
     python orchestration/setup_python.py
+    
+    # Non-interactive setup (auto-accept all steps)
+    python orchestration/setup_python.py -y
     
     # Teardown (removes everything)
     python orchestration/setup_python.py --teardown
@@ -25,9 +33,36 @@ Requirements:
 
 import argparse
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Optional
+
+# Global flag for auto-accept
+AUTO_ACCEPT = False
+
+
+def confirm_step(step_name: str, description: str = "") -> bool:
+    """Prompt user to confirm a step. Returns True if user wants to proceed."""
+    if AUTO_ACCEPT:
+        return True
+    
+    print()
+    if description:
+        print(f"  {description}")
+    
+    while True:
+        response = input(f"  Run '{step_name}'? [y/n/q] (y=yes, n=skip, q=quit): ").strip().lower()
+        if response in ('y', 'yes', ''):
+            return True
+        elif response in ('n', 'no', 's', 'skip'):
+            print(f"  Skipping {step_name}...")
+            return False
+        elif response in ('q', 'quit', 'exit'):
+            print("\nSetup cancelled by user.")
+            sys.exit(0)
+        else:
+            print("  Please enter 'y' (yes), 'n' (skip), or 'q' (quit)")
 
 try:
     import snowflake.connector
@@ -111,24 +146,51 @@ def get_project_root() -> Path:
 
 
 def get_connection(database: Optional[str] = None) -> snowflake.connector.SnowflakeConnection:
-    """Create a Snowflake connection using environment variables."""
+    """Create a Snowflake connection using environment variables.
+    
+    Supports multiple authentication methods:
+    - username_password_mfa: Password + Duo/MFA push notification (default when password is set)
+    - externalbrowser: Opens browser for SSO authentication
+    - snowflake: Basic password auth (no MFA)
+    """
     account = os.environ.get("SNOWFLAKE_ACCOUNT")
     user = os.environ.get("SNOWFLAKE_USER")
     password = os.environ.get("SNOWFLAKE_PASSWORD")
+    authenticator = os.environ.get("SNOWFLAKE_AUTHENTICATOR", "").lower()
     
-    if not all([account, user, password]):
+    if not account or not user:
         print("Error: Missing Snowflake credentials.")
         print("Set these environment variables:")
         print("  export SNOWFLAKE_ACCOUNT='your_account'")
         print("  export SNOWFLAKE_USER='your_username'")
         print("  export SNOWFLAKE_PASSWORD='your_password'")
+        print("")
+        print("Authentication options (SNOWFLAKE_AUTHENTICATOR):")
+        print("  username_password_mfa  - Password + Duo push (default)")
+        print("  externalbrowser        - Opens browser for SSO")
+        print("  snowflake              - Basic password (no MFA)")
+        sys.exit(1)
+    
+    if not password and authenticator != "externalbrowser":
+        print("Error: SNOWFLAKE_PASSWORD is required for this auth method.")
         sys.exit(1)
     
     conn_params = {
         "account": account,
         "user": user,
-        "password": password,
     }
+    
+    if authenticator == "externalbrowser":
+        conn_params["authenticator"] = "externalbrowser"
+        print("  Using browser authentication (SSO)...")
+    elif authenticator == "snowflake":
+        conn_params["password"] = password
+        print("  Using basic password authentication...")
+    else:
+        # Default: username_password_mfa for Duo/MFA push
+        conn_params["password"] = password
+        conn_params["authenticator"] = "username_password_mfa"
+        print("  Using password + MFA (approve the Duo push on your device)...")
     
     if database:
         conn_params["database"] = database
@@ -139,6 +201,7 @@ def get_connection(database: Optional[str] = None) -> snowflake.connector.Snowfl
 
 def run_sql_file(conn: snowflake.connector.SnowflakeConnection, filepath: Path, description: str):
     """Execute a SQL file."""
+    debug = os.environ.get("DEBUG_SQL", "").lower() in ("1", "true", "yes")
     print(f"  Running: {filepath.name} ({description})")
     
     if not filepath.exists():
@@ -148,90 +211,231 @@ def run_sql_file(conn: snowflake.connector.SnowflakeConnection, filepath: Path, 
     sql_content = filepath.read_text()
     
     # Split on semicolons but handle edge cases
+    # Must track: string literals ('/""), block comments (/* */), and $$ delimited blocks (stored procedures)
     statements = []
     current = []
     in_string = False
     string_char = None
+    in_block_comment = False
+    in_dollar_block = False
+    i = 0
     
-    for char in sql_content:
-        if char in ("'", '"') and not in_string:
-            in_string = True
-            string_char = char
-        elif char == string_char and in_string:
-            in_string = False
-            string_char = None
+    while i < len(sql_content):
+        char = sql_content[i]
         
-        if char == ';' and not in_string:
+        # Check for block comment start: /*
+        if not in_string and not in_dollar_block and not in_block_comment:
+            if i + 1 < len(sql_content) and sql_content[i:i+2] == '/*':
+                current.append('/*')
+                in_block_comment = True
+                i += 2
+                continue
+        
+        # Check for block comment end: */
+        if in_block_comment:
+            if i + 1 < len(sql_content) and sql_content[i:i+2] == '*/':
+                current.append('*/')
+                in_block_comment = False
+                i += 2
+                continue
+            # While in block comment, just append and continue
+            current.append(char)
+            i += 1
+            continue
+        
+        # Check for $$ delimiter (used in stored procedures)
+        if not in_string and i + 1 < len(sql_content) and sql_content[i:i+2] == '$$':
+            current.append('$$')
+            in_dollar_block = not in_dollar_block
+            i += 2
+            continue
+        
+        # Track string literals (only when not in $$ block)
+        if not in_dollar_block:
+            if char in ("'", '"') and not in_string:
+                in_string = True
+                string_char = char
+            elif char == string_char and in_string:
+                in_string = False
+                string_char = None
+        
+        # Split on semicolons only when not inside a string or $$ block
+        if char == ';' and not in_string and not in_dollar_block:
             stmt = ''.join(current).strip()
-            if stmt and not stmt.startswith('--'):
+            if stmt:
                 statements.append(stmt)
             current = []
         else:
             current.append(char)
+        
+        i += 1
     
     # Don't forget the last statement
     stmt = ''.join(current).strip()
-    if stmt and not stmt.startswith('--'):
+    if stmt:
         statements.append(stmt)
     
-    cursor = conn.cursor()
+    # Filter statements: skip empty ones and comment-only ones
+    filtered_statements = []
     for stmt in statements:
-        # Skip empty statements and comments
+        # Skip empty statements and single-line comments
         clean_stmt = '\n'.join(
             line for line in stmt.split('\n') 
             if line.strip() and not line.strip().startswith('--')
         )
-        if clean_stmt and not clean_stmt.startswith('/*'):
-            try:
-                cursor.execute(stmt)
-            except Exception as e:
-                # Ignore certain errors (like "already exists")
-                if "already exists" not in str(e).lower():
-                    print(f"    Warning: {e}")
+        if not clean_stmt:
+            continue
+        
+        # Remove block comments to check if there's actual SQL content
+        # This handles cases like: /* comment */ USE DATABASE ...
+        stmt_without_block_comments = re.sub(r'/\*.*?\*/', '', clean_stmt, flags=re.DOTALL).strip()
+        
+        if not stmt_without_block_comments:
+            # Statement is only comments, skip it
+            continue
+        
+        filtered_statements.append(stmt)
+    
+    if debug:
+        print(f"    DEBUG: Found {len(filtered_statements)} statements to execute")
+        for idx, s in enumerate(filtered_statements):
+            preview = s[:60].replace('\n', ' ').strip()
+            semicolon_count = s.count(';')
+            warning = " [WARNING: contains semicolons!]" if semicolon_count > 0 else ""
+            print(f"    DEBUG: [{idx+1}] ({len(s)} chars, {semicolon_count} semicolons{warning}) {preview}...")
+    
+    # Execute statements one at a time
+    cursor = conn.cursor()
+    for stmt in filtered_statements:
+        try:
+            # Use execute with num_statements=1 to ensure single statement execution
+            # If Snowflake detects multiple statements, this will fail clearly
+            cursor.execute(stmt, num_statements=1)
+        except snowflake.connector.errors.ProgrammingError as e:
+            # Handle multi-statement error by trying without the restriction
+            if "statement count" in str(e).lower():
+                # Statement might contain subqueries or complex syntax that looks like multiple statements
+                try:
+                    cursor.execute(stmt)
+                except Exception as inner_e:
+                    if "already exists" not in str(inner_e).lower():
+                        print(f"    Warning: {inner_e}")
+            elif "already exists" not in str(e).lower():
+                print(f"    Warning: {e}")
+        except Exception as e:
+            # Ignore certain errors (like "already exists")
+            if "already exists" not in str(e).lower():
+                print(f"    Warning: {e}")
     cursor.close()
 
 
 def run_ddl_scripts(conn: snowflake.connector.SnowflakeConnection, project_root: Path):
     """Run all DDL scripts to create database objects."""
-    print("\n[1/4] Creating database and schemas...")
-    run_sql_file(conn, project_root / "1_raw/ddl/00_setup.sql", "database setup")
     
-    # Reconnect with database context
-    conn.close()
-    conn = get_connection(DATABASE)
+    # Step 1: Create database and schemas
+    print("\n" + "-" * 50)
+    print("[Step 1/5] Create database, warehouse, and schemas")
+    print("-" * 50)
+    if confirm_step("Create database/schemas", "Creates SAMMYS_SANDWICH_SHOP database, warehouse, and 3 schemas"):
+        run_sql_file(conn, project_root / "1_raw/ddl/00_setup.sql", "database setup")
+        
+        # Reconnect with database context
+        conn.close()
+        conn = get_connection(DATABASE)
+        
+        # Ensure warehouse and schemas exist (in case 00_setup.sql had context issues)
+        cursor = conn.cursor()
+        print("  Ensuring warehouse exists...")
+        try:
+            cursor.execute(f"""
+                CREATE WAREHOUSE IF NOT EXISTS {WAREHOUSE}
+                WAREHOUSE_SIZE = 'X-SMALL'
+                AUTO_SUSPEND = 60
+                AUTO_RESUME = TRUE
+                INITIALLY_SUSPENDED = TRUE
+            """)
+            cursor.execute(f"USE WAREHOUSE {WAREHOUSE}")
+        except Exception as e:
+            print(f"    Warning creating warehouse: {e}")
+        
+        print("  Ensuring schemas exist...")
+        for schema_name in SCHEMAS.values():
+            try:
+                cursor.execute(f"CREATE SCHEMA IF NOT EXISTS {schema_name}")
+            except Exception as e:
+                print(f"    Warning creating schema {schema_name}: {e}")
+        cursor.close()
+    else:
+        # Still need to reconnect with database context
+        conn.close()
+        conn = get_connection(DATABASE)
     
-    print("\n[2/4] Creating tables...")
-    run_sql_file(conn, project_root / "1_raw/ddl/01_raw_tables.sql", "raw tables")
-    run_sql_file(conn, project_root / "2_enriched/ddl/01_enriched_tables.sql", "enriched tables")
-    run_sql_file(conn, project_root / "3_ready/ddl/01_dim_tables.sql", "dimension tables")
-    run_sql_file(conn, project_root / "3_ready/ddl/02_fact_tables.sql", "fact tables")
+    # Step 2: Create tables
+    print("\n" + "-" * 50)
+    print("[Step 2/5] Create tables")
+    print("-" * 50)
+    if confirm_step("Create tables", "Creates raw, enriched, and ready layer tables"):
+        cursor = conn.cursor()
+        
+        # Set context and run raw tables
+        cursor.execute(f"USE SCHEMA {SCHEMAS['raw']}")
+        run_sql_file(conn, project_root / "1_raw/ddl/01_raw_tables.sql", "raw tables")
+        
+        # Set context and run enriched tables
+        cursor.execute(f"USE SCHEMA {SCHEMAS['enriched']}")
+        run_sql_file(conn, project_root / "2_enriched/ddl/01_enriched_tables.sql", "enriched tables")
+        
+        # Set context and run ready layer tables
+        cursor.execute(f"USE SCHEMA {SCHEMAS['ready']}")
+        run_sql_file(conn, project_root / "3_ready/ddl/01_dim_tables.sql", "dimension tables")
+        run_sql_file(conn, project_root / "3_ready/ddl/02_fact_tables.sql", "fact tables")
+        
+        cursor.close()
     
-    print("\n[3/4] Creating stored procedures...")
+    # Step 3: Create stored procedures
+    print("\n" + "-" * 50)
+    print("[Step 3/5] Create stored procedures")
+    print("-" * 50)
+    if confirm_step("Create stored procedures", "Creates enrichment and dimension loading procedures"):
+        cursor = conn.cursor()
+        
+        # Enriched layer procedures
+        cursor.execute(f"USE SCHEMA {SCHEMAS['enriched']}")
+        enriched_sp_dir = project_root / "2_enriched/stored_procedures"
+        if enriched_sp_dir.exists():
+            for sp_file in sorted(enriched_sp_dir.glob("*.sql")):
+                run_sql_file(conn, sp_file, "enriched procedure")
+        
+        # Ready layer procedures
+        cursor.execute(f"USE SCHEMA {SCHEMAS['ready']}")
+        ready_sp_dir = project_root / "3_ready/stored_procedures"
+        if ready_sp_dir.exists():
+            for sp_file in sorted(ready_sp_dir.glob("*.sql")):
+                run_sql_file(conn, sp_file, "ready procedure")
+        
+        cursor.close()
     
-    # Enriched layer procedures
-    enriched_sp_dir = project_root / "2_enriched/stored_procedures"
-    if enriched_sp_dir.exists():
-        for sp_file in sorted(enriched_sp_dir.glob("*.sql")):
-            run_sql_file(conn, sp_file, "enriched procedure")
-    
-    # Ready layer procedures
-    ready_sp_dir = project_root / "3_ready/stored_procedures"
-    if ready_sp_dir.exists():
-        for sp_file in sorted(ready_sp_dir.glob("*.sql")):
-            run_sql_file(conn, sp_file, "ready procedure")
-    
-    # Ready layer report views
-    reports_dir = project_root / "3_ready/reports"
-    if reports_dir.exists():
-        for report_file in sorted(reports_dir.glob("*.sql")):
-            run_sql_file(conn, report_file, "report view")
+    # Step 4: Create report views
+    print("\n" + "-" * 50)
+    print("[Step 4/5] Create report views")
+    print("-" * 50)
+    if confirm_step("Create report views", "Creates analytics views (may show warnings if fact tables are empty)"):
+        cursor = conn.cursor()
+        cursor.execute(f"USE SCHEMA {SCHEMAS['ready']}")
+        
+        reports_dir = project_root / "3_ready/reports"
+        if reports_dir.exists():
+            for report_file in sorted(reports_dir.glob("*.sql")):
+                run_sql_file(conn, report_file, "report view")
+        
+        cursor.close()
     
     return conn
 
 
 def load_seed_data(conn: snowflake.connector.SnowflakeConnection, project_root: Path):
     """Load CSV seed data into raw tables."""
-    print("\n[4/4] Loading seed data...")
+    print("  Loading seed data...")
     
     seed_dir = project_root / "1_raw/seed_data"
     if not seed_dir.exists():
@@ -286,7 +490,7 @@ def load_seed_data(conn: snowflake.connector.SnowflakeConnection, project_root: 
 
 def run_pipeline(conn: snowflake.connector.SnowflakeConnection, project_root: Path):
     """Run the data transformation pipeline."""
-    print("\n[5/5] Running data pipeline...")
+    print("  Running data pipeline...")
     run_sql_file(conn, project_root / "orchestration/run_full_pipeline.sql", "full pipeline")
 
 
@@ -361,7 +565,16 @@ def main():
         action="store_true",
         help="Skip running the transformation pipeline"
     )
+    parser.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Auto-accept all prompts (non-interactive mode)"
+    )
     args = parser.parse_args()
+    
+    # Set global auto-accept flag
+    global AUTO_ACCEPT
+    AUTO_ACCEPT = args.yes
     
     project_root = get_project_root()
     print(f"Project root: {project_root}")
@@ -391,12 +604,27 @@ def main():
     conn.close()
     conn = get_connection(DATABASE)
     
-    load_seed_data(conn, project_root)
+    # Step 5: Load seed data
+    print("\n" + "-" * 50)
+    print("[Step 5/7] Load seed data")
+    print("-" * 50)
+    if confirm_step("Load seed data", "Loads CSV data into raw tables"):
+        load_seed_data(conn, project_root)
     
+    # Step 6: Run pipeline
     if not args.no_pipeline:
-        run_pipeline(conn, project_root)
+        print("\n" + "-" * 50)
+        print("[Step 6/7] Run transformation pipeline")
+        print("-" * 50)
+        if confirm_step("Run pipeline", "Executes stored procedures to transform data"):
+            run_pipeline(conn, project_root)
     
-    verify_setup(conn)
+    # Step 7: Verify setup
+    print("\n" + "-" * 50)
+    print("[Step 7/7] Verify setup")
+    print("-" * 50)
+    if confirm_step("Verify setup", "Checks row counts in tables"):
+        verify_setup(conn)
     
     conn.close()
     

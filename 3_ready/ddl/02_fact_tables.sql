@@ -202,4 +202,4 @@ CREATE OR REPLACE TABLE fact_menu_item_performance (
 );
 
 -- Verify fact tables created
-SHOW TABLES IN SCHEMA SAMMYS_READY LIKE 'FACT%';
+SHOW TABLES LIKE 'FACT%' IN SCHEMA SAMMYS_READY;
