@@ -85,6 +85,10 @@ snowflake-stored-procs/
 │       └── rpt_location_performance.sql
 │
 └── orchestration/
+    ├── SETUP.md                # Setup guide and instructions
+    ├── setup_python.py         # Automated setup/teardown script
+    ├── setup_snowsql.sql       # SnowSQL CLI setup commands
+    ├── setup_webui.md          # Web UI setup instructions
     └── run_full_pipeline.sql   # Execute all transformations in order
 ```
 
@@ -118,41 +122,39 @@ snowflake-stored-procs/
 
 ## Getting Started
 
-### Prerequisites
-- Snowflake account with appropriate permissions
-- SnowSQL CLI or Snowflake web interface
+### Quick Setup (Recommended)
 
-### Deployment Steps
+The fastest way to get started is using the Python setup script:
 
-1. **Create Database and Schemas**
-   ```sql
-   -- Run the setup script
-   @1_raw/ddl/00_setup.sql
-   ```
+```bash
+# Install dependencies
+pip install -r requirements.txt
 
-2. **Create Raw Tables and Load Seed Data**
-   ```sql
-   @1_raw/ddl/01_raw_tables.sql
-   -- Load CSV files via Snowflake UI or COPY INTO commands
-   ```
+# Set credentials
+export SNOWFLAKE_ACCOUNT="your_account"
+export SNOWFLAKE_USER="your_username"
+export SNOWFLAKE_PASSWORD="your_password"
 
-3. **Create Enriched Layer**
-   ```sql
-   @2_enriched/ddl/01_enriched_tables.sql
-   -- Run stored procedures to populate
-   ```
+# Run setup (from project root)
+python orchestration/setup_python.py
+```
 
-4. **Create Ready Layer**
-   ```sql
-   @3_ready/ddl/01_dim_tables.sql
-   @3_ready/ddl/02_fact_tables.sql
-   -- Run stored procedures to populate
-   ```
+This creates everything and loads sample data in one command.
 
-5. **Run Full Pipeline**
-   ```sql
-   @orchestration/run_full_pipeline.sql
-   ```
+### Teardown
+
+To remove everything from Snowflake:
+
+```bash
+python orchestration/setup_python.py --teardown
+```
+
+### Alternative Setup Methods
+
+See the **[Setup Guide](orchestration/SETUP.md)** for:
+- Step-by-step manual setup via Snowflake Web UI
+- SnowSQL CLI-based setup
+- Detailed troubleshooting
 
 ## Sample Reports
 

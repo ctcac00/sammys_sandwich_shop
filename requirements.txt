@@ -1,0 +1,5 @@
+# Sammy's Sandwich Shop - Python Dependencies
+# Install with: pip install -r requirements.txt
+
+snowflake-connector-python>=3.6.0
+pandas>=2.0.0
