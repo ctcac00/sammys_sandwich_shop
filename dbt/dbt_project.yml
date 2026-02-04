@@ -23,23 +23,21 @@ clean-targets:
   - "dbt_packages"
 
 # Configuring models
+# All models use the default schema from profiles.yml (e.g., DBT_DEV)
 models:
   sammys_sandwich_shop:
     # Staging layer - 1:1 with source tables, light transformations
     staging:
-      +schema: staging
       +materialized: view
       +tags: ['staging']
     
     # Intermediate layer - business logic and enrichment
     intermediate:
-      +schema: intermediate
       +materialized: view
       +tags: ['intermediate']
     
     # Marts layer - dimensional model
     marts:
-      +schema: marts
       +materialized: table
       +tags: ['marts']
       
