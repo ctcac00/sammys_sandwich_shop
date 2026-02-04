@@ -31,7 +31,17 @@ Sammy's Sandwich Shop is a fictional sandwich business with multiple locations. 
 │  │ • suppliers    │    │   inventory    │    │ Facts:                     │  │
 │  │ • locations    │    │                │    │ • fact_sales               │  │
 │  │                │    │                │    │ • fact_inventory_snapshot  │  │
-│  └────────────────┘    └────────────────┘    └────────────────────────────┘  │
+│  └───────┬────────┘    └───────┬────────┘    └─────────────┬──────────────┘  │
+│          │                     │                           │                 │
+│          └─────────────────────┴───────────────────────────┘                 │
+│                                    │                                         │
+│                      ┌─────────────▼─────────────┐                           │
+│                      │    DATA QUALITY LAYER     │                           │
+│                      │  • Null checks            │                           │
+│                      │  • Duplicate checks       │                           │
+│                      │  • Referential integrity  │                           │
+│                      │  • Range validation       │                           │
+│                      └───────────────────────────┘                           │
 │                                                                              │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -84,12 +94,22 @@ snowflake-stored-procs/
 │       ├── rpt_ingredient_usage.sql
 │       └── rpt_location_performance.sql
 │
-└── orchestration/
-    ├── SETUP.md                # Setup guide and instructions
-    ├── setup_python.py         # Automated setup/teardown script
-    ├── setup_snowsql.sql       # SnowSQL CLI setup commands
-    ├── setup_webui.md          # Web UI setup instructions
-    └── run_full_pipeline.sql   # Execute all transformations in order
+├── orchestration/
+│   ├── SETUP.md                # Setup guide and instructions
+│   ├── setup_python.py         # Automated setup/teardown script
+│   ├── setup_snowsql.sql       # SnowSQL CLI setup commands
+│   ├── setup_webui.md          # Web UI setup instructions
+│   └── run_full_pipeline.sql   # Execute all transformations in order
+│
+└── data_quality/
+    ├── README.md               # Data quality documentation
+    ├── run_data_quality.py     # Python script for running checks
+    ├── ddl/
+    │   └── 01_data_quality_tables.sql
+    ├── stored_procedures/
+    │   └── sp_run_data_quality_checks.sql
+    └── reports/
+        └── rpt_data_quality_summary.sql
 ```
 
 ## Layer Descriptions
@@ -119,6 +139,16 @@ snowflake-stored-procs/
   - **Dimension Tables**: Slowly changing dimensions (SCD Type 2 where applicable)
   - **Fact Tables**: Transactional and snapshot facts
   - **Reports**: Pre-built analytical views
+
+### 4. Data Quality Layer
+- **Purpose**: Automated data validation and monitoring
+- **Schema**: `SAMMYS_DATA_QUALITY`
+- **Checks**:
+  - Null validation on required fields
+  - Primary key uniqueness
+  - Referential integrity between tables
+  - Value range validation
+  - Row count consistency across layers
 
 ## Getting Started
 
@@ -155,6 +185,23 @@ See the **[Setup Guide](orchestration/SETUP.md)** for:
 - Step-by-step manual setup via Snowflake Web UI
 - SnowSQL CLI-based setup
 - Detailed troubleshooting
+
+## Data Quality
+
+Data quality checks run automatically as part of the pipeline. To run them separately:
+
+```bash
+# Run all data quality checks
+python data_quality/run_data_quality.py
+
+# Run checks for a specific layer
+python data_quality/run_data_quality.py --layer enriched
+
+# View historical results
+python data_quality/run_data_quality.py --history
+```
+
+See [data_quality/README.md](data_quality/README.md) for full documentation.
 
 ## Sample Reports
 

@@ -80,7 +80,8 @@ WAREHOUSE = "SAMMYS_WH"
 SCHEMAS = {
     "raw": "SAMMYS_RAW",
     "enriched": "SAMMYS_ENRICHED", 
-    "ready": "SAMMYS_READY"
+    "ready": "SAMMYS_READY",
+    "data_quality": "SAMMYS_DATA_QUALITY"
 }
 
 # Table definitions with column mappings for seed data
@@ -334,7 +335,7 @@ def run_ddl_scripts(conn: snowflake.connector.SnowflakeConnection, project_root:
     
     # Step 1: Create database and schemas
     print("\n" + "-" * 50)
-    print("[Step 1/5] Create database, warehouse, and schemas")
+    print("[Step 1/6] Create database, warehouse, and schemas")
     print("-" * 50)
     if confirm_step("Create database/schemas", "Creates SAMMYS_SANDWICH_SHOP database, warehouse, and 3 schemas"):
         run_sql_file(conn, project_root / "1_raw/ddl/00_setup.sql", "database setup")
@@ -372,7 +373,7 @@ def run_ddl_scripts(conn: snowflake.connector.SnowflakeConnection, project_root:
     
     # Step 2: Create tables
     print("\n" + "-" * 50)
-    print("[Step 2/5] Create tables")
+    print("[Step 2/6] Create tables")
     print("-" * 50)
     if confirm_step("Create tables", "Creates raw, enriched, and ready layer tables"):
         cursor = conn.cursor()
@@ -394,7 +395,7 @@ def run_ddl_scripts(conn: snowflake.connector.SnowflakeConnection, project_root:
     
     # Step 3: Create stored procedures
     print("\n" + "-" * 50)
-    print("[Step 3/5] Create stored procedures")
+    print("[Step 3/6] Create stored procedures")
     print("-" * 50)
     if confirm_step("Create stored procedures", "Creates enrichment and dimension loading procedures"):
         cursor = conn.cursor()
@@ -417,7 +418,7 @@ def run_ddl_scripts(conn: snowflake.connector.SnowflakeConnection, project_root:
     
     # Step 4: Create report views
     print("\n" + "-" * 50)
-    print("[Step 4/5] Create report views")
+    print("[Step 4/6] Create report views")
     print("-" * 50)
     if confirm_step("Create report views", "Creates analytics views (may show warnings if fact tables are empty)"):
         cursor = conn.cursor()
@@ -427,6 +428,35 @@ def run_ddl_scripts(conn: snowflake.connector.SnowflakeConnection, project_root:
         if reports_dir.exists():
             for report_file in sorted(reports_dir.glob("*.sql")):
                 run_sql_file(conn, report_file, "report view")
+        
+        cursor.close()
+    
+    # Step 5: Create data quality objects
+    print("\n" + "-" * 50)
+    print("[Step 5/6] Create data quality framework")
+    print("-" * 50)
+    if confirm_step("Create data quality", "Creates schema, tables, and procedures for data quality checks"):
+        cursor = conn.cursor()
+        
+        # Create data quality schema
+        try:
+            cursor.execute(f"CREATE SCHEMA IF NOT EXISTS {SCHEMAS['data_quality']}")
+        except Exception as e:
+            print(f"    Warning creating schema: {e}")
+        
+        cursor.execute(f"USE SCHEMA {SCHEMAS['data_quality']}")
+        
+        # Run data quality DDL
+        dq_ddl_dir = project_root / "data_quality/ddl"
+        if dq_ddl_dir.exists():
+            for ddl_file in sorted(dq_ddl_dir.glob("*.sql")):
+                run_sql_file(conn, ddl_file, "data quality tables")
+        
+        # Run data quality stored procedures
+        dq_sp_dir = project_root / "data_quality/stored_procedures"
+        if dq_sp_dir.exists():
+            for sp_file in sorted(dq_sp_dir.glob("*.sql")):
+                run_sql_file(conn, sp_file, "data quality procedure")
         
         cursor.close()
     
@@ -604,24 +634,24 @@ def main():
     conn.close()
     conn = get_connection(DATABASE)
     
-    # Step 5: Load seed data
+    # Step 6: Load seed data
     print("\n" + "-" * 50)
-    print("[Step 5/7] Load seed data")
+    print("[Step 6/8] Load seed data")
     print("-" * 50)
     if confirm_step("Load seed data", "Loads CSV data into raw tables"):
         load_seed_data(conn, project_root)
     
-    # Step 6: Run pipeline
+    # Step 7: Run pipeline (includes data quality checks)
     if not args.no_pipeline:
         print("\n" + "-" * 50)
-        print("[Step 6/7] Run transformation pipeline")
+        print("[Step 7/8] Run transformation pipeline")
         print("-" * 50)
-        if confirm_step("Run pipeline", "Executes stored procedures to transform data"):
+        if confirm_step("Run pipeline", "Executes stored procedures to transform data + data quality checks"):
             run_pipeline(conn, project_root)
     
-    # Step 7: Verify setup
+    # Step 8: Verify setup
     print("\n" + "-" * 50)
-    print("[Step 7/7] Verify setup")
+    print("[Step 8/8] Verify setup")
     print("-" * 50)
     if confirm_step("Verify setup", "Checks row counts in tables"):
         verify_setup(conn)

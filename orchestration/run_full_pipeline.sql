@@ -135,4 +135,37 @@ FROM SAMMYS_READY.v_rpt_inventory_alerts
 WHERE priority <= 2
 LIMIT 10;
 
+-- ============================================================================
+-- STEP 6: RUN DATA QUALITY CHECKS
+-- ============================================================================
+SELECT '=== RUNNING DATA QUALITY CHECKS ===' AS status;
+
+-- Run data quality validation across all layers
+CALL SAMMYS_DATA_QUALITY.sp_run_data_quality_checks('all');
+
+-- Show quality check summary
+SELECT 'DATA QUALITY SUMMARY' AS report;
+SELECT 
+    overall_status,
+    total_checks,
+    checks_passed,
+    checks_warned,
+    checks_failed,
+    duration_seconds || 's' AS duration
+FROM SAMMYS_DATA_QUALITY.data_quality_runs
+ORDER BY run_timestamp DESC
+LIMIT 1;
+
+-- Show any failed checks
+SELECT 'FAILED DATA QUALITY CHECKS' AS report;
+SELECT 
+    layer,
+    table_name,
+    check_name,
+    records_failed,
+    failure_percentage || '%' AS failure_pct
+FROM SAMMYS_DATA_QUALITY.data_quality_results
+WHERE run_id = (SELECT run_id FROM SAMMYS_DATA_QUALITY.data_quality_runs ORDER BY run_timestamp DESC LIMIT 1)
+  AND status = 'FAILED';
+
 SELECT '=== PIPELINE EXECUTION COMPLETE ===' AS status;

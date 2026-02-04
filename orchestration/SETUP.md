@@ -37,6 +37,7 @@ This guide walks you through setting up the complete data warehouse in Snowflake
 │                                                                             │
 │  Step 5: Run the data pipeline                                              │
 │          → Run: orchestration/run_full_pipeline.sql                         │
+│          → Includes data quality checks automatically                       │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -133,3 +134,61 @@ SELECT * FROM TABLE(INFORMATION_SCHEMA.COPY_HISTORY(
     START_TIME => DATEADD(hour, -1, CURRENT_TIMESTAMP())
 ));
 ```
+
+## Data Quality
+
+The pipeline includes automated data quality checks that run after each execution.
+
+### Running Data Quality Checks
+
+Data quality checks are automatically included when you run the pipeline. To run them separately:
+
+**Using Python (recommended):**
+```bash
+python data_quality/run_data_quality.py
+```
+
+**Using SQL:**
+```sql
+CALL SAMMYS_DATA_QUALITY.sp_run_data_quality_checks('all');
+```
+
+### What Gets Checked
+
+| Category | Description |
+|----------|-------------|
+| Null checks | Required fields are not null |
+| Duplicate checks | Primary keys are unique |
+| Referential integrity | Foreign key relationships are valid |
+| Range checks | Values are within expected ranges |
+| Row count checks | Record counts match between layers |
+| Aggregate checks | Aggregated values match source |
+
+### Viewing Results
+
+```sql
+-- Latest run summary
+SELECT * FROM SAMMYS_DATA_QUALITY.data_quality_runs 
+ORDER BY run_timestamp DESC LIMIT 1;
+
+-- Failed checks from latest run
+SELECT layer, table_name, check_name, records_failed, failure_percentage
+FROM SAMMYS_DATA_QUALITY.data_quality_results
+WHERE run_id = (SELECT run_id FROM SAMMYS_DATA_QUALITY.data_quality_runs ORDER BY run_timestamp DESC LIMIT 1)
+  AND status = 'FAILED';
+```
+
+### Python Options
+
+```bash
+# Run checks for specific layer
+python data_quality/run_data_quality.py --layer enriched
+
+# Show verbose output (all checks)
+python data_quality/run_data_quality.py --verbose
+
+# View run history
+python data_quality/run_data_quality.py --history
+```
+
+See [data_quality/README.md](../data_quality/README.md) for complete documentation.
