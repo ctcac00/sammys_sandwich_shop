@@ -5,10 +5,10 @@ This directory contains a Delta Live Tables (DLT) implementation of the Sammy's 
 ## Architecture Overview
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                         Delta Live Tables Pipeline                          │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
+┌────────────────────────────────────────────────────────────────────────────┐
+│                         Delta Live Tables Pipeline                         │
+├────────────────────────────────────────────────────────────────────────────┤
+│                                                                            │
 │  ┌──────────────┐    ┌──────────────┐    ┌──────────────────────────────┐  │
 │  │    BRONZE    │    │    SILVER    │    │            GOLD              │  │
 │  │              │    │              │    │                              │  │
@@ -18,15 +18,15 @@ This directory contains a Delta Live Tables (DLT) implementation of the Sammy's 
 │  │              │    │  Enriched    │    │                              │  │
 │  │              │    │  (derived)   │    │                              │  │
 │  └──────────────┘    └──────────────┘    └──────────────────────────────┘  │
-│                                                                             │
+│                                                                            │
 │  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │                     Data Quality Expectations                        │   │
+│  │                     Data Quality Expectations                       │   │
 │  │  • Primary key validation (expect_or_drop)                          │   │
 │  │  • Value range checks (expect)                                      │   │
 │  │  • Referential integrity validation                                 │   │
 │  └─────────────────────────────────────────────────────────────────────┘   │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## DLT vs Traditional Notebooks

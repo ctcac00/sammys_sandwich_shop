@@ -6,33 +6,33 @@ This project implements a data warehouse for Sammy's Sandwich Shop using Databri
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                           DATA ARCHITECTURE                                  │
+│                           DATA ARCHITECTURE                                 │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                              │
-│   CSV Files (data/)                                                          │
-│        │                                                                     │
-│        ▼                                                                     │
+│                                                                             │
+│   CSV Files (data/)                                                         │
+│        │                                                                    │
+│        ▼                                                                    │
 │   ┌─────────────────────────────────────────────────────────────────────┐   │
 │   │  BRONZE LAYER (bronze schema)                                       │   │
 │   │  Raw data loaded from CSV files with metadata columns               │   │
 │   │  Tables: customers, employees, locations, menu_items, etc. (10)     │   │
 │   └─────────────────────────────────────────────────────────────────────┘   │
-│        │                                                                     │
-│        ▼                                                                     │
+│        │                                                                    │
+│        ▼                                                                    │
 │   ┌─────────────────────────────────────────────────────────────────────┐   │
 │   │  SILVER LAYER (silver schema)                                       │   │
 │   │  ├── Staging (stg_*): Type casting, cleaning, null handling (10)    │   │
 │   │  └── Enriched (int_*): Derived fields, business logic (10)          │   │
 │   └─────────────────────────────────────────────────────────────────────┘   │
-│        │                                                                     │
-│        ▼                                                                     │
+│        │                                                                    │
+│        ▼                                                                    │
 │   ┌─────────────────────────────────────────────────────────────────────┐   │
 │   │  GOLD LAYER (gold schema)                                           │   │
 │   │  ├── Dimensions (dim_*): SCD Type 1 with surrogate keys (9)         │   │
 │   │  ├── Facts (fct_*): Transactional and aggregated facts (6)          │   │
 │   │  └── Reports (rpt_*): Analytical views (26)                         │   │
 │   └─────────────────────────────────────────────────────────────────────┘   │
-│                                                                              │
+│                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
