@@ -27,6 +27,20 @@ models:
         tests:
           - unique
           - not_null
+      - name: location_id
+        description: Foreign key to location
+        tests:
+          - relationships:
+              to: ref('stg_locations')
+              field: location_id
+      - name: hourly_rate
+        description: Employee hourly pay rate
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 7.25
+              max_value: 100
+              config:
+                severity: warn
 
   - name: stg_menu_items
     description: Staged menu item data with type casting and cleaning
@@ -36,6 +50,12 @@ models:
         tests:
           - unique
           - not_null
+      - name: base_price
+        description: Base price of menu item
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              strictly_greater_than_min: true
 
   - name: stg_ingredients
     description: Staged ingredient data with type casting and cleaning
@@ -45,6 +65,14 @@ models:
         tests:
           - unique
           - not_null
+      - name: supplier_id
+        description: Foreign key to supplier
+        tests:
+          - relationships:
+              to: ref('stg_suppliers')
+              field: supplier_id
+              config:
+                severity: warn
 
   - name: stg_menu_item_ingredients
     description: Staged recipe/BOM data linking menu items to ingredients
@@ -52,9 +80,15 @@ models:
       - name: item_id
         tests:
           - not_null
+          - relationships:
+              to: ref('stg_menu_items')
+              field: item_id
       - name: ingredient_id
         tests:
           - not_null
+          - relationships:
+              to: ref('stg_ingredients')
+              field: ingredient_id
 
   - name: stg_orders
     description: Staged order header data with type casting and cleaning
@@ -64,6 +98,45 @@ models:
         tests:
           - unique
           - not_null
+      - name: customer_id
+        description: Foreign key to customer (nullable for guest orders)
+        tests:
+          - relationships:
+              to: ref('stg_customers')
+              field: customer_id
+              config:
+                severity: warn
+                where: "customer_id is not null"
+      - name: employee_id
+        description: Foreign key to employee
+        tests:
+          - relationships:
+              to: ref('stg_employees')
+              field: employee_id
+              config:
+                severity: warn
+      - name: location_id
+        description: Foreign key to location
+        tests:
+          - relationships:
+              to: ref('stg_locations')
+              field: location_id
+              config:
+                severity: warn
+      - name: total_amount
+        description: Total order amount
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+      - name: discount_amount
+        description: Discount applied to order
+    tests:
+      - dbt_expectations.expect_column_pair_values_A_to_be_greater_than_B:
+          column_A: subtotal
+          column_B: discount_amount
+          or_equal: true
+          config:
+            severity: warn
 
   - name: stg_order_items
     description: Staged order line item data with type casting and cleaning
@@ -74,8 +147,20 @@ models:
           - unique
           - not_null
       - name: order_id
+        description: Foreign key to order
         tests:
           - not_null
+          - relationships:
+              to: ref('stg_orders')
+              field: order_id
+      - name: item_id
+        description: Foreign key to menu item
+        tests:
+          - relationships:
+              to: ref('stg_menu_items')
+              field: item_id
+              config:
+                severity: warn
 
   - name: stg_suppliers
     description: Staged supplier data with type casting and cleaning
@@ -94,3 +179,20 @@ models:
         tests:
           - unique
           - not_null
+      - name: location_id
+        description: Foreign key to location
+        tests:
+          - relationships:
+              to: ref('stg_locations')
+              field: location_id
+      - name: ingredient_id
+        description: Foreign key to ingredient
+        tests:
+          - relationships:
+              to: ref('stg_ingredients')
+              field: ingredient_id
+      - name: quantity_on_hand
+        description: Current inventory quantity
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0

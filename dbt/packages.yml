@@ -8,3 +8,7 @@ packages:
   # dbt-date provides date/time utility macros
   - package: calogica/dbt_date
     version: [">=0.10.0", "<1.0.0"]
+  
+  # dbt-expectations provides data quality testing macros
+  - package: calogica/dbt_expectations
+    version: [">=0.10.0", "<1.0.0"]
