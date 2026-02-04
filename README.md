@@ -26,22 +26,37 @@ Sammy's Sandwich Shop is a fictional sandwich business with multiple locations. 
 │   ├── orders.csv
 │   └── suppliers.csv
 │
-├── snowflake/               # Snowflake implementation
+├── snowflake/               # Snowflake stored procedures implementation
 │   ├── 1_raw/               # Raw layer DDL
 │   ├── 2_enriched/          # Enriched layer with stored procedures
 │   ├── 3_ready/             # Ready layer with dims, facts, reports
 │   ├── data_quality/        # Data quality framework
 │   ├── orchestration/       # Setup and pipeline scripts
-│   └── README.md            # Snowflake-specific documentation
+│   └── README.md
 │
-├── databricks/              # Databricks implementation (planned)
+├── dbt/                     # dbt + Snowflake implementation
+│   ├── models/              # Staging, intermediate, marts
+│   ├── tests/               # Data quality tests
+│   └── README.md
 │
-└── dbt/                     # dbt implementation (planned)
+└── databricks/              # Databricks implementations
+    ├── notebooks/           # PySpark notebooks (manual orchestration)
+    │   ├── 00_setup/        # Catalog setup
+    │   ├── 01_bronze/       # Raw data loading
+    │   ├── 02_silver/       # Staging and enriched transforms
+    │   ├── 03_gold/         # Dimensions, facts, reports
+    │   ├── 04_tests/        # Data quality tests
+    │   └── orchestration/   # Pipeline runner
+    │
+    └── dlt/                 # Delta Live Tables (declarative)
+        ├── bronze/          # Raw ingestion tables
+        ├── silver/          # Staging and enriched tables
+        └── gold/            # Dimensions, facts, report views
 ```
 
 ## Platform Implementations
 
-### Snowflake
+### Snowflake (Stored Procedures)
 
 Full implementation with stored procedures, dimensional model, and data quality framework.
 
@@ -53,11 +68,7 @@ pip install -r requirements.txt
 python orchestration/setup_python.py
 ```
 
-### Databricks
-
-Coming soon.
-
-### dbt
+### dbt + Snowflake
 
 dbt implementation using the same Snowflake RAW schema as the source. Recreates all transformations and reports using dbt's declarative approach.
 
@@ -70,6 +81,51 @@ dbt run
 ```
 
 **Note**: The dbt project uses the existing Snowflake RAW schema as its source. Run the Snowflake setup first to create and populate the raw tables before running dbt.
+
+### Databricks Notebooks
+
+PySpark implementation using traditional Databricks notebooks with manual orchestration. Demonstrates the medallion architecture (Bronze/Silver/Gold) with explicit pipeline control.
+
+See [databricks/notebooks/README.md](databricks/notebooks/README.md) for setup and documentation.
+
+**Features:**
+- 65+ notebooks organized by layer
+- Custom orchestration scripts (`_run_all_*.py`)
+- Separate data quality test notebooks
+- Unity Catalog integration
+
+```bash
+# Upload notebooks to Databricks workspace
+# Run orchestration/run_full_pipeline.py
+```
+
+### Databricks Delta Live Tables (DLT)
+
+Declarative pipeline implementation using Delta Live Tables. Same transformations as the notebooks version but with automatic dependency management and built-in data quality.
+
+See [databricks/dlt/README.md](databricks/dlt/README.md) for setup and documentation.
+
+**Features:**
+- 7 notebooks (vs 65+ in traditional approach)
+- Automatic DAG-based execution
+- Built-in `@dlt.expect` data quality expectations
+- Pipeline UI with lineage visualization
+
+```bash
+# Create DLT pipeline in Databricks UI
+# Add all notebooks from databricks/dlt/
+# Set target catalog and schema
+```
+
+### Implementation Comparison
+
+| Aspect | Snowflake | dbt | Databricks Notebooks | Databricks DLT |
+|--------|-----------|-----|---------------------|----------------|
+| Language | SQL + JS | SQL (Jinja) | PySpark | PySpark |
+| Orchestration | Stored procs | dbt CLI | Manual scripts | Automatic |
+| Data Quality | Custom framework | dbt tests | Test notebooks | `@dlt.expect` |
+| Execution | Snowflake engine | Snowflake engine | Spark cluster | Spark cluster |
+| Best For | SQL-centric teams | Analytics engineers | Custom Spark logic | Managed pipelines |
 
 ## Data Model
 
