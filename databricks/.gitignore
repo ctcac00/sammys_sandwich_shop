@@ -1,0 +1,26 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Spark/Delta local artifacts (if testing locally)
+spark-warehouse/
+metastore_db/
+derby.log
+*.crc
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.*
+
+# macOS
+.DS_Store
+
+# Jupyter/Databricks checkpoints
+.ipynb_checkpoints/
