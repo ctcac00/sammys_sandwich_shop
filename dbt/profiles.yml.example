@@ -9,7 +9,7 @@ sammys_sandwich_shop:
       account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
       user: "{{ env_var('SNOWFLAKE_USER') }}"
       password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
-      role: SYSADMIN
+      # role: omit to use your default role (recommended)
       database: SAMMYS_SANDWICH_SHOP
       warehouse: SAMMYS_WH
       schema: DBT_DEV
@@ -21,7 +21,7 @@ sammys_sandwich_shop:
       account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
       user: "{{ env_var('SNOWFLAKE_USER') }}"
       password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
-      role: SYSADMIN
+      # role: omit to use your default role (recommended)
       database: SAMMYS_SANDWICH_SHOP
       warehouse: SAMMYS_WH
       schema: DBT_PROD

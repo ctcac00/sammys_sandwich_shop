@@ -3,12 +3,12 @@
 # This dbt project recreates the same data warehouse transformations
 # and reports as the Snowflake stored procedures implementation.
 
-name: 'sammys_sandwich_shop'
-version: '1.0.0'
+name: "sammys_sandwich_shop"
+version: "1.0.0"
 config-version: 2
 
 # This setting configures which "profile" dbt uses for this project.
-profile: 'sammys_sandwich_shop'
+profile: "sammys_sandwich_shop"
 
 # These configurations specify where dbt should look for different types of files.
 model-paths: ["models"]
@@ -22,6 +22,10 @@ clean-targets:
   - "target"
   - "dbt_packages"
 
+# Create schema if it doesn't exist
+# on-run-start:
+# - "CREATE SCHEMA IF NOT EXISTS {{ target.database }}.{{ target.schema }}"
+
 # Configuring models
 # All models use the default schema from profiles.yml (e.g., DBT_DEV)
 models:
@@ -29,39 +33,39 @@ models:
     # Staging layer - 1:1 with source tables, light transformations
     staging:
       +materialized: view
-      +tags: ['staging']
-    
+      +tags: ["staging"]
+
     # Intermediate layer - business logic and enrichment
     intermediate:
       +materialized: view
-      +tags: ['intermediate']
-    
+      +tags: ["intermediate"]
+
     # Marts layer - dimensional model
     marts:
       +materialized: table
-      +tags: ['marts']
-      
+      +tags: ["marts"]
+
       # Dimension tables
       dimensions:
         +materialized: table
-        +tags: ['dimension']
-      
+        +tags: ["dimension"]
+
       # Fact tables
       facts:
         +materialized: table
-        +tags: ['fact']
-      
+        +tags: ["fact"]
+
       # Report views
       reports:
         +materialized: view
-        +tags: ['report']
+        +tags: ["report"]
 
 # Variables for configuration
 vars:
   # Default date range for analysis
-  start_date: '2024-01-01'
-  
+  start_date: "2024-01-01"
+
   # Unknown/default values for dimensions
-  unknown_customer_id: 'UNKNOWN'
-  unknown_employee_id: 'UNKNOWN'
-  unknown_location_id: 'UNKNOWN'
+  unknown_customer_id: "UNKNOWN"
+  unknown_employee_id: "UNKNOWN"
+  unknown_location_id: "UNKNOWN"

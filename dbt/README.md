@@ -16,39 +16,32 @@ See the [Snowflake project README](../snowflake/README.md) for instructions on:
 This project implements the same three-layer architecture as the Snowflake project:
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           dbt MODEL LAYERS                                  │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────────────┐  │
-│  │   STAGING       │    │  INTERMEDIATE   │    │        MARTS            │  │
-│  │   (stg_*)       │    │    (int_*)      │    │                         │  │
-│  │                 │    │                 │    │  Dimensions (dim_*)     │  │
-│  │ • stg_customers │    │ • int_customers │    │  • dim_customer         │  │
-│  │ • stg_employees │    │ • int_employees │    │  • dim_employee         │  │
-│  │ • stg_orders    │───►│ • int_orders    │───►│  • dim_menu_item        │  │
-│  │ • stg_menu_items│    │ • int_menu_items│    │  • dim_date             │  │
-│  │ • stg_inventory │    │ • int_inventory │    │  • dim_location         │  │
-│  │ • ...           │    │ • ...           │    │                         │  │
-│  │                 │    │                 │    │  Facts (fct_*)          │  │
-│  │                 │    │                 │    │  • fct_sales            │  │
-│  │                 │    │                 │    │  • fct_daily_summary    │  │
-│  │                 │    │                 │    │  • fct_inventory        │  │
-│  │                 │    │                 │    │                         │  │
-│  │                 │    │                 │    │  Reports (rpt_*)        │  │
-│  │                 │    │                 │    │  • rpt_daily_sales      │  │
-│  │                 │    │                 │    │  • rpt_top_customers    │  │
-│  │                 │    │                 │    │  • rpt_location_perf    │  │
-│  └────────┬────────┘    └────────┬────────┘    └────────────┬────────────┘  │
-│           │                      │                          │               │
-│           └──────────────────────┴──────────────────────────┘               │
-│                                  │                                          │
-│               ┌──────────────────▼──────────────────┐                       │
-│               │     SNOWFLAKE RAW SCHEMA            │                       │
-│               │     (Source - see Snowflake project)│                       │
-│               └─────────────────────────────────────┘                       │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                        dbt MODEL LAYERS                                           │
+├───────────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                                   │
+│  ┌──────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌───────────────────────┐  │
+│  │ SNOWFLAKE SOURCE │    │    STAGING      │    │  INTERMEDIATE   │    │        MARTS          │  │
+│  │   (SAMMYS_RAW)   │    │    (stg_*)      │    │    (int_*)      │    │                       │  │
+│  │                  │    │                 │    │                 │    │  Dimensions (dim_*)   │  │
+│  │ • CUSTOMERS      │    │ • stg_customers │    │ • int_customers │    │  • dim_customer       │  │
+│  │ • EMPLOYEES      │    │ • stg_employees │    │ • int_employees │    │  • dim_employee       │  │
+│  │ • ORDERS         │───►│ • stg_orders    │───►│ • int_orders    │───►│  • dim_menu_item      │  │
+│  │ • MENU_ITEMS     │    │ • stg_menu_items│    │ • int_menu_items│    │  • dim_date           │  │
+│  │ • INVENTORY      │    │ • stg_inventory │    │ • int_inventory │    │  • dim_location       │  │
+│  │ • ...            │    │ • ...           │    │ • ...           │    │                       │  │
+│  │                  │    │                 │    │                 │    │  Facts (fct_*)        │  │
+│  │                  │    │                 │    │                 │    │  • fct_sales          │  │
+│  │                  │    │                 │    │                 │    │  • fct_daily_summary  │  │
+│  │                  │    │                 │    │                 │    │  • fct_inventory      │  │
+│  │                  │    │                 │    │                 │    │                       │  │
+│  │                  │    │                 │    │                 │    │  Reports (rpt_*)      │  │
+│  │                  │    │                 │    │                 │    │  • rpt_daily_sales    │  │
+│  │                  │    │                 │    │                 │    │  • rpt_top_customers  │  │
+│  │                  │    │                 │    │                 │    │  • rpt_location_perf  │  │
+│  └──────────────────┘    └─────────────────┘    └─────────────────┘    └───────────────────────┘  │
+│                                                                                                   │
+└───────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Project Structure
