@@ -467,7 +467,7 @@ def load_seed_data(conn: snowflake.connector.SnowflakeConnection, project_root: 
     """Load CSV seed data into raw tables."""
     print("  Loading seed data...")
     
-    seed_dir = project_root / "1_raw/seed_data"
+    seed_dir = project_root.parent / "data"
     if not seed_dir.exists():
         print(f"  Error: Seed data directory not found: {seed_dir}")
         return
