@@ -1,0 +1,107 @@
+version: 2
+
+models:
+  - name: dim_date
+    description: Date dimension with calendar and fiscal attributes
+    columns:
+      - name: date_key
+        description: Surrogate key in YYYYMMDD format
+        tests:
+          - unique
+          - not_null
+      - name: full_date
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_time
+    description: Time dimension with time-of-day attributes
+    columns:
+      - name: time_key
+        description: Surrogate key in HHMM format
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_customer
+    description: Customer dimension with demographic and loyalty attributes
+    columns:
+      - name: customer_sk
+        description: Surrogate key
+        tests:
+          - unique
+          - not_null
+      - name: customer_id
+        description: Business key
+        tests:
+          - not_null
+
+  - name: dim_employee
+    description: Employee dimension with job and tenure attributes
+    columns:
+      - name: employee_sk
+        description: Surrogate key
+        tests:
+          - unique
+          - not_null
+      - name: employee_id
+        description: Business key
+        tests:
+          - not_null
+
+  - name: dim_location
+    description: Location dimension with geographic and operational attributes
+    columns:
+      - name: location_sk
+        description: Surrogate key
+        tests:
+          - unique
+          - not_null
+      - name: location_id
+        description: Business key
+        tests:
+          - not_null
+
+  - name: dim_menu_item
+    description: Menu item dimension with pricing, cost, and nutritional attributes
+    columns:
+      - name: menu_item_sk
+        description: Surrogate key
+        tests:
+          - unique
+          - not_null
+      - name: item_id
+        description: Business key
+        tests:
+          - not_null
+
+  - name: dim_ingredient
+    description: Ingredient dimension with cost, supplier, and allergen attributes
+    columns:
+      - name: ingredient_sk
+        description: Surrogate key
+        tests:
+          - unique
+          - not_null
+      - name: ingredient_id
+        description: Business key
+        tests:
+          - not_null
+
+  - name: dim_payment_method
+    description: Static payment method dimension with processing fee information
+    columns:
+      - name: payment_method_sk
+        description: Surrogate key
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_order_type
+    description: Static order type dimension with service time information
+    columns:
+      - name: order_type_sk
+        description: Surrogate key
+        tests:
+          - unique
+          - not_null

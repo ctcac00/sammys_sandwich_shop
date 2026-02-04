@@ -1,0 +1,85 @@
+version: 2
+
+models:
+  # Sales Reports
+  - name: rpt_daily_sales_summary
+    description: Daily sales metrics by location with day-over-day and week-over-week comparisons
+    
+  - name: rpt_weekly_sales_summary
+    description: Weekly aggregated sales by location
+    
+  - name: rpt_company_daily_totals
+    description: Company-wide daily totals across all locations
+
+  # Customer Reports
+  - name: rpt_customer_overview
+    description: Customer overview with lifetime metrics, RFM scores, and favorites
+    
+  - name: rpt_rfm_segment_summary
+    description: RFM segment analysis showing customer counts and revenue by segment
+    
+  - name: rpt_loyalty_tier_analysis
+    description: Loyalty tier performance with spend distribution
+    
+  - name: rpt_top_customers
+    description: Top 100 customers ranked by total spend
+    
+  - name: rpt_customers_at_risk
+    description: Customers identified as at-risk for churn based on RFM analysis
+    
+  - name: rpt_customer_cohort_analysis
+    description: Customer cohort analysis by signup month
+
+  # Menu Item Reports
+  - name: rpt_top_selling_items
+    description: Menu items ranked by revenue with Pareto analysis
+    
+  - name: rpt_top_items_by_category
+    description: Top 5 items within each menu category
+    
+  - name: rpt_category_performance
+    description: Menu category performance summary
+    
+  - name: rpt_menu_item_profitability
+    description: Menu item profitability quadrant analysis (Stars, Workhorses, Puzzles, Dogs)
+    
+  - name: rpt_daily_item_sales
+    description: Daily sales breakdown by menu item
+
+  # Location Reports
+  - name: rpt_location_performance
+    description: Comprehensive location performance metrics
+    
+  - name: rpt_location_ranking
+    description: Locations ranked by revenue, orders, and other metrics
+    
+  - name: rpt_location_daily_comparison
+    description: Daily performance comparison across locations
+    
+  - name: rpt_location_peak_hours
+    description: Order patterns by hour for each location
+    
+  - name: rpt_location_employee_performance
+    description: Employee performance metrics by location
+    
+  - name: rpt_drive_thru_analysis
+    description: Drive-thru performance analysis for applicable locations
+
+  # Inventory Reports
+  - name: rpt_inventory_status
+    description: Current inventory status by location and ingredient
+    
+  - name: rpt_inventory_alerts
+    description: Low stock and expiring inventory alerts
+    
+  - name: rpt_inventory_value_by_location
+    description: Inventory value summary by location
+    
+  - name: rpt_ingredient_cost_breakdown
+    description: Ingredient costs per menu item
+    
+  - name: rpt_estimated_ingredient_usage
+    description: Estimated ingredient usage based on sales
+    
+  - name: rpt_supplier_spend
+    description: Estimated spend by supplier based on sales

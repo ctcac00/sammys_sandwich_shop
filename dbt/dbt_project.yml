@@ -1,0 +1,69 @@
+# Sammy's Sandwich Shop - dbt Project
+# =====================================
+# This dbt project recreates the same data warehouse transformations
+# and reports as the Snowflake stored procedures implementation.
+
+name: 'sammys_sandwich_shop'
+version: '1.0.0'
+config-version: 2
+
+# This setting configures which "profile" dbt uses for this project.
+profile: 'sammys_sandwich_shop'
+
+# These configurations specify where dbt should look for different types of files.
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+# Configuring models
+models:
+  sammys_sandwich_shop:
+    # Staging layer - 1:1 with source tables, light transformations
+    staging:
+      +schema: staging
+      +materialized: view
+      +tags: ['staging']
+    
+    # Intermediate layer - business logic and enrichment
+    intermediate:
+      +schema: intermediate
+      +materialized: view
+      +tags: ['intermediate']
+    
+    # Marts layer - dimensional model
+    marts:
+      +schema: marts
+      +materialized: table
+      +tags: ['marts']
+      
+      # Dimension tables
+      dimensions:
+        +materialized: table
+        +tags: ['dimension']
+      
+      # Fact tables
+      facts:
+        +materialized: table
+        +tags: ['fact']
+      
+      # Report views
+      reports:
+        +materialized: view
+        +tags: ['report']
+
+# Variables for configuration
+vars:
+  # Default date range for analysis
+  start_date: '2024-01-01'
+  
+  # Unknown/default values for dimensions
+  unknown_customer_id: 'UNKNOWN'
+  unknown_employee_id: 'UNKNOWN'
+  unknown_location_id: 'UNKNOWN'

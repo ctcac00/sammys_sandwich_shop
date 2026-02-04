@@ -59,7 +59,17 @@ Coming soon.
 
 ### dbt
 
-Coming soon.
+dbt implementation using the same Snowflake RAW schema as the source. Recreates all transformations and reports using dbt's declarative approach.
+
+See [dbt/README.md](dbt/README.md) for setup and documentation.
+
+```bash
+cd dbt
+dbt deps
+dbt run
+```
+
+**Note**: The dbt project uses the existing Snowflake RAW schema as its source. Run the Snowflake setup first to create and populate the raw tables before running dbt.
 
 ## Data Model
 

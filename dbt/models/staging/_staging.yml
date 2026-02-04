@@ -1,0 +1,96 @@
+version: 2
+
+models:
+  - name: stg_locations
+    description: Staged location data with type casting and cleaning
+    columns:
+      - name: location_id
+        description: Primary key for location
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_customers
+    description: Staged customer data with type casting and cleaning
+    columns:
+      - name: customer_id
+        description: Primary key for customer
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_employees
+    description: Staged employee data with type casting and cleaning
+    columns:
+      - name: employee_id
+        description: Primary key for employee
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_menu_items
+    description: Staged menu item data with type casting and cleaning
+    columns:
+      - name: item_id
+        description: Primary key for menu item
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_ingredients
+    description: Staged ingredient data with type casting and cleaning
+    columns:
+      - name: ingredient_id
+        description: Primary key for ingredient
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_menu_item_ingredients
+    description: Staged recipe/BOM data linking menu items to ingredients
+    columns:
+      - name: item_id
+        tests:
+          - not_null
+      - name: ingredient_id
+        tests:
+          - not_null
+
+  - name: stg_orders
+    description: Staged order header data with type casting and cleaning
+    columns:
+      - name: order_id
+        description: Primary key for order
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_order_items
+    description: Staged order line item data with type casting and cleaning
+    columns:
+      - name: order_item_id
+        description: Primary key for order line item
+        tests:
+          - unique
+          - not_null
+      - name: order_id
+        tests:
+          - not_null
+
+  - name: stg_suppliers
+    description: Staged supplier data with type casting and cleaning
+    columns:
+      - name: supplier_id
+        description: Primary key for supplier
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_inventory
+    description: Staged inventory snapshot data with type casting and cleaning
+    columns:
+      - name: inventory_id
+        description: Primary key for inventory record
+        tests:
+          - unique
+          - not_null

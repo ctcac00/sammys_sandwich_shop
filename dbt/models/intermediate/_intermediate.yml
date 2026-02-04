@@ -1,0 +1,32 @@
+version: 2
+
+models:
+  - name: int_locations
+    description: Enriched location data with derived fields like years in operation
+
+  - name: int_customers
+    description: Enriched customer data with derived fields like age, tenure, and loyalty tier rank
+
+  - name: int_employees
+    description: Enriched employee data with derived fields like tenure and manager flag
+
+  - name: int_menu_items
+    description: Enriched menu item data with derived fields like price tier and calorie category
+
+  - name: int_ingredients
+    description: Enriched ingredient data with derived fields like cost tier
+
+  - name: int_menu_item_ingredients
+    description: Enriched recipe/BOM data with calculated ingredient costs
+
+  - name: int_suppliers
+    description: Enriched supplier data with payment days extracted from terms
+
+  - name: int_orders
+    description: Enriched order data with derived fields like time period, day of week, and flags
+
+  - name: int_order_items
+    description: Enriched order line item data with customization flag
+
+  - name: int_inventory
+    description: Enriched inventory data with derived fields like quantity available and stock status

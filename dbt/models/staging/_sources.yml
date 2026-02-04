@@ -1,0 +1,311 @@
+# Source definitions for Sammy's Sandwich Shop
+# =============================================
+# Sources point to the raw data tables in the Snowflake RAW schema.
+# These tables are created and loaded by the Snowflake project.
+# See: ../snowflake/README.md for raw schema setup and data loading.
+
+version: 2
+
+sources:
+  - name: raw
+    description: >
+      Raw source data for Sammy's Sandwich Shop. These tables contain 
+      unprocessed data loaded from CSV seed files by the Snowflake project.
+      
+      **Setup**: See the snowflake/ directory for raw table creation and 
+      data loading instructions. Run the Snowflake setup first before 
+      using this dbt project.
+    database: SAMMYS_SANDWICH_SHOP
+    schema: SAMMYS_RAW
+    
+    tables:
+      - name: locations
+        description: Store location master data
+        columns:
+          - name: location_id
+            description: Primary key for location
+            tests:
+              - unique
+              - not_null
+          - name: location_name
+            description: Display name of the location
+          - name: address
+            description: Street address
+          - name: city
+            description: City name
+          - name: state
+            description: Two-letter state code
+          - name: zip_code
+            description: ZIP/postal code
+          - name: phone
+            description: Contact phone number
+          - name: manager_employee_id
+            description: Foreign key to employees table for the store manager
+          - name: open_date
+            description: Date the location opened
+          - name: seating_capacity
+            description: Number of seats in the location
+          - name: has_drive_thru
+            description: Whether the location has a drive-thru
+          - name: _loaded_at
+            description: Timestamp when the record was loaded
+          - name: _source_file
+            description: Source file name
+
+      - name: customers
+        description: Customer master data with loyalty program information
+        columns:
+          - name: customer_id
+            description: Primary key for customer
+            tests:
+              - unique
+              - not_null
+          - name: first_name
+            description: Customer first name
+          - name: last_name
+            description: Customer last name
+          - name: email
+            description: Customer email address
+          - name: phone
+            description: Customer phone number
+          - name: address
+            description: Street address
+          - name: city
+            description: City name
+          - name: state
+            description: Two-letter state code
+          - name: zip_code
+            description: ZIP/postal code
+          - name: birth_date
+            description: Customer birth date
+          - name: signup_date
+            description: Date customer signed up
+          - name: loyalty_tier
+            description: "Loyalty tier: Bronze, Silver, Gold, Platinum"
+          - name: loyalty_points
+            description: Current loyalty points balance
+          - name: preferred_location
+            description: Preferred store location
+          - name: marketing_opt_in
+            description: Whether customer opted into marketing communications
+
+      - name: employees
+        description: Employee records and assignments
+        columns:
+          - name: employee_id
+            description: Primary key for employee
+            tests:
+              - unique
+              - not_null
+          - name: first_name
+            description: Employee first name
+          - name: last_name
+            description: Employee last name
+          - name: email
+            description: Employee email address
+          - name: phone
+            description: Employee phone number
+          - name: hire_date
+            description: Date employee was hired
+          - name: job_title
+            description: Job title/position
+          - name: department
+            description: Department name
+          - name: hourly_rate
+            description: Hourly pay rate
+          - name: location_id
+            description: Primary work location
+          - name: manager_id
+            description: Manager's employee ID
+          - name: employment_status
+            description: "Status: Active, Inactive, Terminated"
+
+      - name: menu_items
+        description: Products available for sale
+        columns:
+          - name: item_id
+            description: Primary key for menu item
+            tests:
+              - unique
+              - not_null
+          - name: item_name
+            description: Display name of the item
+          - name: category
+            description: Main category (Sandwiches, Sides, Drinks, etc.)
+          - name: subcategory
+            description: Subcategory within main category
+          - name: description
+            description: Item description
+          - name: base_price
+            description: Base selling price
+          - name: is_active
+            description: Whether the item is currently available
+          - name: is_seasonal
+            description: Whether the item is seasonal
+          - name: calories
+            description: Calorie count
+          - name: prep_time_minutes
+            description: Preparation time in minutes
+          - name: introduced_date
+            description: Date item was added to menu
+
+      - name: ingredients
+        description: Raw ingredients used in menu items
+        columns:
+          - name: ingredient_id
+            description: Primary key for ingredient
+            tests:
+              - unique
+              - not_null
+          - name: ingredient_name
+            description: Name of the ingredient
+          - name: category
+            description: Category (Proteins, Vegetables, Condiments, etc.)
+          - name: unit_of_measure
+            description: Unit of measure (oz, each, lb, etc.)
+          - name: cost_per_unit
+            description: Cost per unit
+          - name: supplier_id
+            description: Primary supplier
+          - name: is_allergen
+            description: Whether ingredient contains allergens
+          - name: allergen_type
+            description: Type of allergen if applicable
+          - name: shelf_life_days
+            description: Shelf life in days
+          - name: storage_type
+            description: Storage requirements (Refrigerated, Frozen, Dry)
+
+      - name: menu_item_ingredients
+        description: Recipe composition - which ingredients are used in each menu item
+        columns:
+          - name: item_id
+            description: Foreign key to menu_items
+            tests:
+              - not_null
+          - name: ingredient_id
+            description: Foreign key to ingredients
+            tests:
+              - not_null
+          - name: quantity_required
+            description: Quantity needed per item
+          - name: is_optional
+            description: Whether the ingredient is optional
+          - name: extra_charge
+            description: Additional charge for this ingredient
+
+      - name: orders
+        description: Order transaction headers
+        columns:
+          - name: order_id
+            description: Primary key for order
+            tests:
+              - unique
+              - not_null
+          - name: customer_id
+            description: Foreign key to customers (null for guest orders)
+          - name: employee_id
+            description: Employee who processed the order
+          - name: location_id
+            description: Location where order was placed
+          - name: order_date
+            description: Date of the order
+          - name: order_time
+            description: Time of the order
+          - name: order_type
+            description: "Type: Dine-In, Takeout, Drive-Thru, Delivery"
+          - name: order_status
+            description: "Status: Completed, Cancelled, Refunded"
+          - name: subtotal
+            description: Order subtotal before tax/discounts
+          - name: tax_amount
+            description: Tax amount
+          - name: discount_amount
+            description: Discount applied
+          - name: tip_amount
+            description: Tip amount
+          - name: total_amount
+            description: Total amount charged
+          - name: payment_method
+            description: Payment method used
+
+      - name: order_items
+        description: Order line items (detail rows)
+        columns:
+          - name: order_item_id
+            description: Primary key for order item
+            tests:
+              - unique
+              - not_null
+          - name: order_id
+            description: Foreign key to orders
+            tests:
+              - not_null
+          - name: item_id
+            description: Foreign key to menu_items
+          - name: quantity
+            description: Quantity ordered
+          - name: unit_price
+            description: Unit price at time of sale
+          - name: customizations
+            description: Any customizations requested
+          - name: line_total
+            description: Line item total
+
+      - name: suppliers
+        description: Vendor/supplier information
+        columns:
+          - name: supplier_id
+            description: Primary key for supplier
+            tests:
+              - unique
+              - not_null
+          - name: supplier_name
+            description: Supplier company name
+          - name: contact_name
+            description: Primary contact name
+          - name: email
+            description: Contact email
+          - name: phone
+            description: Contact phone
+          - name: address
+            description: Street address
+          - name: city
+            description: City
+          - name: state
+            description: State
+          - name: zip_code
+            description: ZIP code
+          - name: payment_terms
+            description: Payment terms (Net 30, etc.)
+          - name: lead_time_days
+            description: Typical lead time for orders
+          - name: is_active
+            description: Whether supplier is currently active
+
+      - name: inventory
+        description: Daily inventory snapshots by location and ingredient
+        columns:
+          - name: inventory_id
+            description: Primary key for inventory record
+            tests:
+              - unique
+              - not_null
+          - name: location_id
+            description: Location foreign key
+          - name: ingredient_id
+            description: Ingredient foreign key
+          - name: snapshot_date
+            description: Date of the inventory snapshot
+          - name: quantity_on_hand
+            description: Current quantity in stock
+          - name: quantity_reserved
+            description: Quantity reserved for orders
+          - name: reorder_point
+            description: Quantity threshold for reordering
+          - name: reorder_quantity
+            description: Standard reorder quantity
+          - name: last_restock_date
+            description: Date of last restock
+          - name: expiration_date
+            description: Expiration date of current stock

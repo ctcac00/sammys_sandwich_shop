@@ -1,0 +1,29 @@
+# Example profiles.yml for Sammy's Sandwich Shop dbt project
+# Copy this to ~/.dbt/profiles.yml and fill in your credentials
+
+sammys_sandwich_shop:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      role: SYSADMIN
+      database: SAMMYS_SANDWICH_SHOP
+      warehouse: SAMMYS_WH
+      schema: DBT_DEV
+      threads: 4
+      client_session_keep_alive: False
+    
+    prod:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      role: SYSADMIN
+      database: SAMMYS_SANDWICH_SHOP
+      warehouse: SAMMYS_WH
+      schema: DBT_PROD
+      threads: 8
+      client_session_keep_alive: False
