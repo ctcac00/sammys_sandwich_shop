@@ -1,1 +1,0 @@
-{{ test_unique(column_name="menu_item_sk", model=get_where_subquery(ref('fct_menu_item_performance'))) }}

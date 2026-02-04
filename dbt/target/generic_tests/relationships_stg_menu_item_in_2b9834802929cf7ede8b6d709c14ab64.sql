@@ -1,1 +1,0 @@
-{{ test_relationships(column_name="ingredient_id", field="ingredient_id", model=get_where_subquery(ref('stg_menu_item_ingredients')), to=ref('stg_ingredients')) }}

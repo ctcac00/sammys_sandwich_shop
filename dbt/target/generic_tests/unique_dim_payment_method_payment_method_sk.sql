@@ -1,1 +1,0 @@
-{{ test_unique(column_name="payment_method_sk", model=get_where_subquery(ref('dim_payment_method'))) }}

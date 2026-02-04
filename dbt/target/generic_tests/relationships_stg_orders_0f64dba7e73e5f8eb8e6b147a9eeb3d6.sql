@@ -1,2 +1,0 @@
-{{ config({"severity":"Warn"}) }}
-{{ test_relationships(column_name="employee_id", field="employee_id", model=get_where_subquery(ref('stg_orders')), to=ref('stg_employees')) }}

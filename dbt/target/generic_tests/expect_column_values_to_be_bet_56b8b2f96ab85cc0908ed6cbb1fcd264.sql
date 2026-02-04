@@ -1,1 +1,0 @@
-{{ dbt_expectations.test_expect_column_values_to_be_between(column_name="quantity", min_value=1, model=get_where_subquery(ref('fct_sales_line_item'))) }}

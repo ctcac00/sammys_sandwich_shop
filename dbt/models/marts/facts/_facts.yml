@@ -17,44 +17,50 @@ models:
         tests:
           - not_null
           - relationships:
-              to: ref('dim_date')
-              field: date_key
+              arguments:
+                to: ref('dim_date')
+                field: date_key
       - name: customer_sk
         description: Foreign key to dim_customer
         tests:
           - relationships:
-              to: ref('dim_customer')
-              field: customer_sk
+              arguments:
+                to: ref('dim_customer')
+                field: customer_sk
               config:
                 severity: warn
       - name: employee_sk
         description: Foreign key to dim_employee
         tests:
           - relationships:
-              to: ref('dim_employee')
-              field: employee_sk
+              arguments:
+                to: ref('dim_employee')
+                field: employee_sk
               config:
                 severity: warn
       - name: location_sk
         description: Foreign key to dim_location
         tests:
           - relationships:
-              to: ref('dim_location')
-              field: location_sk
+              arguments:
+                to: ref('dim_location')
+                field: location_sk
               config:
                 severity: warn
       - name: total_amount
         description: Total order amount (must be non-negative)
         tests:
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 0
+              arguments:
+                min_value: 0
       - name: discount_amount
         description: Discount applied to order
     tests:
       - dbt_expectations.expect_column_pair_values_A_to_be_greater_than_B:
-          column_A: subtotal
-          column_B: discount_amount
-          or_equal: true
+          arguments:
+            column_A: subtotal
+            column_B: discount_amount
+            or_equal: true
           config:
             severity: warn
 
@@ -74,49 +80,56 @@ models:
         tests:
           - not_null
           - relationships:
-              to: ref('fct_sales')
-              field: order_id
+              arguments:
+                to: ref('fct_sales')
+                field: order_id
       - name: date_key
         description: Foreign key to dim_date
         tests:
           - not_null
           - relationships:
-              to: ref('dim_date')
-              field: date_key
+              arguments:
+                to: ref('dim_date')
+                field: date_key
       - name: menu_item_sk
         description: Foreign key to dim_menu_item
         tests:
           - relationships:
-              to: ref('dim_menu_item')
-              field: menu_item_sk
+              arguments:
+                to: ref('dim_menu_item')
+                field: menu_item_sk
               config:
                 severity: warn
       - name: customer_sk
         description: Foreign key to dim_customer
         tests:
           - relationships:
-              to: ref('dim_customer')
-              field: customer_sk
+              arguments:
+                to: ref('dim_customer')
+                field: customer_sk
               config:
                 severity: warn
       - name: location_sk
         description: Foreign key to dim_location
         tests:
           - relationships:
-              to: ref('dim_location')
-              field: location_sk
+              arguments:
+                to: ref('dim_location')
+                field: location_sk
               config:
                 severity: warn
       - name: quantity
         description: Number of items ordered
         tests:
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 1
+              arguments:
+                min_value: 1
       - name: line_total
         description: Total for this line item
         tests:
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 0
+              arguments:
+                min_value: 0
 
   - name: fct_inventory_snapshot
     description: >
@@ -132,7 +145,8 @@ models:
         description: Quantity in inventory
         tests:
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 0
+              arguments:
+                min_value: 0
 
   - name: fct_daily_summary
     description: >
@@ -148,26 +162,30 @@ models:
         description: Foreign key to dim_date
         tests:
           - relationships:
-              to: ref('dim_date')
-              field: date_key
+              arguments:
+                to: ref('dim_date')
+                field: date_key
       - name: location_sk
         description: Foreign key to dim_location
         tests:
           - relationships:
-              to: ref('dim_location')
-              field: location_sk
+              arguments:
+                to: ref('dim_location')
+                field: location_sk
               config:
                 severity: warn
       - name: total_orders
         description: Total orders for the day
         tests:
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 0
+              arguments:
+                min_value: 0
       - name: total_revenue
         description: Total revenue for the day
         tests:
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 0
+              arguments:
+                min_value: 0
 
   - name: fct_customer_activity
     description: >
@@ -180,8 +198,9 @@ models:
           - unique
           - not_null
           - relationships:
-              to: ref('dim_customer')
-              field: customer_sk
+              arguments:
+                to: ref('dim_customer')
+                field: customer_sk
 
   - name: fct_menu_item_performance
     description: >
@@ -194,5 +213,6 @@ models:
           - unique
           - not_null
           - relationships:
-              to: ref('dim_menu_item')
-              field: menu_item_sk
+              arguments:
+                to: ref('dim_menu_item')
+                field: menu_item_sk

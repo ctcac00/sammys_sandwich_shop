@@ -1,1 +1,0 @@
-{{ test_not_null(column_name="ingredient_id", model=get_where_subquery(source('raw', 'menu_item_ingredients'))) }}

@@ -1,1 +1,0 @@
-{{ test_unique(column_name="menu_item_sk", model=get_where_subquery(ref('dim_menu_item'))) }}

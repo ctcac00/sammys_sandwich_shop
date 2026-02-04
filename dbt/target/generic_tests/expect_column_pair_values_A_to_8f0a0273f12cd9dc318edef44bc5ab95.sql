@@ -1,2 +1,0 @@
-{{ config({"severity":"Warn"}) }}
-{{ dbt_expectations.test_expect_column_pair_values_A_to_be_greater_than_B(column_A="subtotal", column_B="discount_amount", model=get_where_subquery(ref('fct_sales')), or_equal=true) }}
