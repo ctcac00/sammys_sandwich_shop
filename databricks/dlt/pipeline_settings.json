@@ -1,0 +1,35 @@
+{
+  "name": "sammys_sandwich_shop_dlt",
+  "catalog": "sammys_sandwich_shop",
+  "target": "dlt",
+  "libraries": [
+    {"notebook": {"path": "/Workspace/Repos/sammys-sandwich-shop/databricks/dlt/config"}},
+    {"notebook": {"path": "/Workspace/Repos/sammys-sandwich-shop/databricks/dlt/bronze/ingest"}},
+    {"notebook": {"path": "/Workspace/Repos/sammys-sandwich-shop/databricks/dlt/silver/staging"}},
+    {"notebook": {"path": "/Workspace/Repos/sammys-sandwich-shop/databricks/dlt/silver/enriched"}},
+    {"notebook": {"path": "/Workspace/Repos/sammys-sandwich-shop/databricks/dlt/gold/dimensions"}},
+    {"notebook": {"path": "/Workspace/Repos/sammys-sandwich-shop/databricks/dlt/gold/facts"}},
+    {"notebook": {"path": "/Workspace/Repos/sammys-sandwich-shop/databricks/dlt/gold/reports"}}
+  ],
+  "configuration": {
+    "pipelines.enableTrackHistory": "true",
+    "spark.databricks.delta.preview.enabled": "true"
+  },
+  "clusters": [
+    {
+      "label": "default",
+      "autoscale": {
+        "min_workers": 1,
+        "max_workers": 4,
+        "mode": "ENHANCED"
+      }
+    }
+  ],
+  "development": true,
+  "continuous": false,
+  "channel": "CURRENT",
+  "edition": "ADVANCED",
+  "photon": true,
+  "notifications": [],
+  "data_sampling": false
+}
