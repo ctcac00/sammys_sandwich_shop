@@ -1,0 +1,1 @@
+{{ dbt_expectations.test_expect_column_values_to_be_between(column_name="quantity_on_hand", min_value=0, model=get_where_subquery(ref('stg_inventory'))) }}

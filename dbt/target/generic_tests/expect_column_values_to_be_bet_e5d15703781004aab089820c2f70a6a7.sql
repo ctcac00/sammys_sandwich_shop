@@ -1,0 +1,2 @@
+{{ config({"severity":"Warn"}) }}
+{{ dbt_expectations.test_expect_column_values_to_be_between(column_name="hourly_rate", max_value=100, min_value=7.25, model=get_where_subquery(ref('stg_employees'))) }}

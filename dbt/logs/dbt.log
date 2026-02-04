@@ -1,0 +1,92 @@
+==================== 2026-02-04T12:47:43.501583Z | 019c28b1-bf88-7a80-a3ae-7d7fc1c9a08d ====================
+12:47:43.502040 [info ]: dbt-fusion 2.0.0-preview.104
+12:47:43.502657 [info ]: Started loading project
+12:47:43.509271 [info ]: Loading ~/.dbt/profiles.yml
+12:47:43.511992 [info ]: Finished loading project [  0.01s]
+12:47:43.512297 [info ]: Started debugging
+12:47:43.512437 [info ]: Debugging profile: dev
+12:47:43.512475 [info ]: Debugging dbt version: 2.0.0-preview.104
+12:47:43.512511 [info ]: Debugging platform: macos aarch64 (unix)
+12:47:43.512578 [info ]: Debugging adapter type: snowflake (remote)
+12:47:43.574651 [info ]: Debugging dependencies:
+  git: OK
+12:47:43.575188 [info ]: Debugging connection:
+  "client_session_keep_alive": false,
+  "account": "zna84829",
+  "database": "SAMMYS_SANDWICH_SHOP",
+  "warehouse": "SAMMYS_WH",
+  "schema": "DBT_DEV",
+  "role": "SYSADMIN"
+12:47:46.908365 [info ]: Finished debugging [  3.40s]
+12:47:46.908803 [error]: dbt1011: [Snowflake] 260001: user is empty
+12:47:47.214039 [info ]: 
+==================== Execution Summary =====================
+Finished 'debug' with 1 error for target 'dev' [3.7s]
+==================== 2026-02-04T12:48:20.568050Z | 019c28b2-5041-7191-bf02-9422a141a8e7 ====================
+12:48:20.573651 [info ]: dbt-fusion 2.0.0-preview.104
+12:48:20.578050 [info ]: Started loading project
+12:48:20.611109 [info ]: Loading ~/.dbt/profiles.yml
+12:48:20.626195 [info ]: Finished loading project [  0.05s]
+12:48:20.627821 [info ]: Started debugging
+12:48:20.628146 [info ]: Debugging profile: dev
+12:48:20.628184 [info ]: Debugging dbt version: 2.0.0-preview.104
+12:48:20.628270 [info ]: Debugging platform: macos aarch64 (unix)
+12:48:20.628620 [info ]: Debugging adapter type: snowflake (remote)
+12:48:20.695781 [info ]: Debugging dependencies:
+  git: OK
+12:48:20.699665 [info ]: Debugging connection:
+  "client_session_keep_alive": false,
+  "account": "zna84829",
+  "user": "CARLOS_CASTRO",
+  "database": "SAMMYS_SANDWICH_SHOP",
+  "warehouse": "SAMMYS_WH",
+  "schema": "DBT_DEV",
+  "role": "SYSADMIN"
+12:48:22.053535 [debug]: Query executed on node unknown:
+select 1 as id
+12:48:22.322182 [info ]: Debugging connection test: OK
+12:48:22.324512 [info ]: Debugged All checks passed!
+12:48:22.325460 [info ]: Finished debugging [  1.70s]
+12:48:22.943945 [info ]: 
+==================== Execution Summary =====================
+Finished 'debug' successfully for target 'dev' [2.4s]
+==================== 2026-02-04T12:48:29.462392Z | 019c28b2-7311-79f2-be1e-ae5dd38ca267 ====================
+12:48:29.462464 [info ]: dbt-fusion 2.0.0-preview.104
+12:48:29.462581 [info ]: Started loading project
+12:48:29.464603 [info ]: Loading ~/.dbt/profiles.yml
+  Fetching packages.yml
+12:48:29.961039 [warn ]: dbt1065: Package 'dbt_expectations' has been moved to 'metaplane/dbt_expectations'. Please update your package reference.
+12:48:29.961929 [warn ]: dbt1065: Package 'dbt_expectations' requires dbt version [>=1.2.0, <2.0.0], but current version is 2.0.0-preview.104. This package may not be compatible with your dbt version.
+12:48:29.976787 [warn ]: dbt1065: Package 'dbt_date' has been moved to 'godatadriven/dbt_date'. Please update your package reference.
+12:48:29.976865 [warn ]: dbt1065: Package 'dbt_date' requires dbt version [>=1.2.0, <2.0.0], but current version is 2.0.0-preview.104. This package may not be compatible with your dbt version.
+12:48:29.991413 [warn ]: dbt1065: Package 'dbt_date' has been moved to 'godatadriven/dbt_date'. Please update your package reference.
+12:48:29.991452 [warn ]: dbt1065: Package 'dbt_date' requires dbt version [>=1.2.0, <2.0.0], but current version is 2.0.0-preview.104. This package may not be compatible with your dbt version.
+12:48:29.993609 [info ]: Installing packages
+12:48:29.996221 [info ]: Installing calogica/dbt_expectations
+12:48:30.577622 [info ]:  Installed calogica/dbt_expectations: 0.10.4
+12:48:30.577746 [info ]: Installing dbt-labs/dbt_utils
+12:48:31.175527 [info ]:  Installed dbt-labs/dbt_utils: 1.3.3
+12:48:31.175729 [info ]: Installing calogica/dbt_date
+12:48:31.762347 [info ]:  Installed calogica/dbt_date: 0.10.1
+12:48:31.763485 [info ]:  Installed 3 packages
+12:48:31.765134 [info ]: Finished loading project [  2.30s]
+12:48:32.078571 [info ]: 
+==================== Execution Summary =====================
+Finished 'deps' with 6 warnings for target 'dev' [2.6s]
+==================== 2026-02-04T12:49:56.302906Z | 019c28b3-c63a-7e13-ab9f-3729d36d0181 ====================
+12:49:56.307604 [info ]: dbt-fusion 2.0.0-preview.104
+12:49:56.311557 [info ]: Started loading project
+12:49:56.345572 [info ]: Loading ~/.dbt/profiles.yml
+  Fetching packages.yml
+12:49:56.824425 [info ]: Installing packages
+12:49:56.869356 [info ]: Installing metaplane/dbt_expectations
+12:49:57.423398 [info ]:  Installed metaplane/dbt_expectations: 0.10.10
+12:49:57.423604 [info ]: Installing godatadriven/dbt_date
+12:49:57.817640 [info ]:  Installed godatadriven/dbt_date: 0.17.1
+12:49:57.817753 [info ]: Installing dbt-labs/dbt_utils
+12:49:58.342628 [info ]:  Installed dbt-labs/dbt_utils: 1.3.3
+12:49:58.347253 [info ]:  Installed 3 packages
+12:49:58.351676 [info ]: Finished loading project [  2.04s]
+12:49:58.740735 [info ]: 
+==================== Execution Summary =====================
+Finished 'deps' successfully for target 'dev' [2.4s]

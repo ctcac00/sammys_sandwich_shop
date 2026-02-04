@@ -1,0 +1,1 @@
+{{ test_unique(column_name="inventory_snapshot_id", model=get_where_subquery(ref('fct_inventory_snapshot'))) }}

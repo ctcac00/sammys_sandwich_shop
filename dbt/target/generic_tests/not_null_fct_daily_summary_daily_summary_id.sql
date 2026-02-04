@@ -1,0 +1,1 @@
+{{ test_not_null(column_name="daily_summary_id", model=get_where_subquery(ref('fct_daily_summary'))) }}

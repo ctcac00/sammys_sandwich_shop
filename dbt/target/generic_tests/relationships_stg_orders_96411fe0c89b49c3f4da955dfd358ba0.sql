@@ -1,0 +1,2 @@
+{{ config({"severity":"Warn","where":"customer_id is not null"}) }}
+{{ test_relationships(column_name="customer_id", field="customer_id", model=get_where_subquery(ref('stg_orders')), to=ref('stg_customers')) }}

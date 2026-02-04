@@ -1,0 +1,1 @@
+{{ test_unique(column_name="ingredient_id", model=get_where_subquery(ref('stg_ingredients'))) }}

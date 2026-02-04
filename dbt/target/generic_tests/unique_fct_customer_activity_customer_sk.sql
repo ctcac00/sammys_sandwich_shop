@@ -1,0 +1,1 @@
+{{ test_unique(column_name="customer_sk", model=get_where_subquery(ref('fct_customer_activity'))) }}
