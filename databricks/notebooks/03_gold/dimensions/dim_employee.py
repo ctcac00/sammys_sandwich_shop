@@ -70,6 +70,28 @@ employee_dimension = df.select(
 # COMMAND ----------
 
 from pyspark.sql.functions import to_date as spark_to_date
+from pyspark.sql.types import (
+    StructType, StructField, StringType as ST, DoubleType, BooleanType,
+    DateType, LongType
+)
+
+_unknown_schema = StructType([
+    StructField("employee_id", ST(), True),
+    StructField("first_name", ST(), True),
+    StructField("last_name", ST(), True),
+    StructField("full_name", ST(), True),
+    StructField("job_title", ST(), True),
+    StructField("department", ST(), True),
+    StructField("hourly_rate", DoubleType(), True),
+    StructField("rate_band", ST(), True),
+    StructField("location_id", ST(), True),
+    StructField("is_manager", BooleanType(), True),
+    StructField("hire_date", DateType(), True),
+    StructField("tenure_months", LongType(), True),
+    StructField("employment_status", ST(), True),
+    StructField("effective_date", ST(), True),
+    StructField("is_current", BooleanType(), True),
+])
 
 unknown_employee = spark.createDataFrame([{
     "employee_id": UNKNOWN_EMPLOYEE_ID,
@@ -87,7 +109,7 @@ unknown_employee = spark.createDataFrame([{
     "employment_status": "Unknown",
     "effective_date": "1900-01-01",
     "is_current": True
-}])
+}], schema=_unknown_schema)
 
 # COMMAND ----------
 
