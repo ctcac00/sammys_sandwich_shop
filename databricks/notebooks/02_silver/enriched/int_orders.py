@@ -13,7 +13,7 @@
 
 from pyspark.sql.functions import (
     col, concat_ws, to_timestamp, date_format, hour, dayofweek,
-    current_timestamp, when, coalesce, lit, count
+    current_timestamp, when, coalesce, lit, count, expr
 )
 
 # COMMAND ----------
@@ -45,6 +45,38 @@ item_counts = df_order_items.groupBy("order_id").agg(
 
 # COMMAND ----------
 
+order_time_candidate_sql = """
+CASE
+  -- Sometimes `order_time` arrives as a full timestamp (e.g. '2026-02-06 11:30:00').
+  -- In that case, extract just the time portion so we don't end up with two dates
+  -- after concatenating with `order_date`.
+  WHEN trim(cast(o.order_time as string)) rlike '^[0-9]{4}-[0-9]{2}-[0-9]{2}[ ]+[0-9]{2}:[0-9]{2}(:[0-9]{2})?$'
+    THEN regexp_extract(
+      trim(cast(o.order_time as string)),
+      '([0-9]{2}:[0-9]{2}(:[0-9]{2})?)',
+      1
+    )
+  ELSE trim(cast(o.order_time as string))
+END
+""".strip()
+
+order_time_normalized_sql = f"""
+CASE
+  -- Normalize 'HH:mm' to 'HH:mm:ss' so casts are consistent
+  WHEN ({order_time_candidate_sql}) rlike '^[0-9]{{2}}:[0-9]{{2}}$'
+    THEN concat(({order_time_candidate_sql}), ':00')
+  ELSE ({order_time_candidate_sql})
+END
+""".strip()
+
+# Use `try_cast` so malformed values return NULL (ANSI-safe) instead of crashing the pipeline.
+order_datetime_expr = expr(f"""
+coalesce(
+  try_cast(concat_ws(' ', cast(o.order_date as string), {order_time_normalized_sql}) as timestamp),
+  try_cast(trim(cast(o.order_time as string)) as timestamp)
+)
+""")
+
 enriched = df_orders.alias("o").join(
     item_counts.alias("oi"),
     col("o.order_id") == col("oi.order_id"),
@@ -67,19 +99,20 @@ enriched = df_orders.alias("o").join(
     col("o.total_amount"),
     
     # Combined datetime
-    to_timestamp(concat_ws(" ", col("o.order_date"), col("o.order_time"))).alias("order_datetime"),
+    order_datetime_expr.alias("order_datetime"),
     
     # Day of week
     date_format(col("o.order_date"), "EEEE").alias("order_day_of_week"),
     
-    # Hour of order - extract from time string
-    hour(to_timestamp(concat_ws(" ", col("o.order_date"), col("o.order_time")))).alias("order_hour"),
+    # Hour of order (NULL if order_datetime couldn't be parsed)
+    hour(order_datetime_expr).alias("order_hour"),
     
     # Time period
-    when(hour(to_timestamp(concat_ws(" ", col("o.order_date"), col("o.order_time")))).between(6, 10), "Breakfast")
-    .when(hour(to_timestamp(concat_ws(" ", col("o.order_date"), col("o.order_time")))).between(11, 14), "Lunch")
-    .when(hour(to_timestamp(concat_ws(" ", col("o.order_date"), col("o.order_time")))).between(15, 17), "Afternoon")
-    .when(hour(to_timestamp(concat_ws(" ", col("o.order_date"), col("o.order_time")))).between(18, 21), "Dinner")
+    when(order_datetime_expr.isNull(), lit(None).cast("string"))
+    .when(hour(order_datetime_expr).between(6, 10), "Breakfast")
+    .when(hour(order_datetime_expr).between(11, 14), "Lunch")
+    .when(hour(order_datetime_expr).between(15, 17), "Afternoon")
+    .when(hour(order_datetime_expr).between(18, 21), "Dinner")
     .otherwise("Late Night").alias("order_period"),
     
     # Weekend flag (Spark: Sunday=1, Saturday=7)
