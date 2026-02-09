@@ -12,7 +12,7 @@
 # COMMAND ----------
 
 from pyspark.sql.functions import (
-    col, lit, coalesce, current_timestamp,
+    col, lit, coalesce, current_timestamp, when,
     count, countDistinct, sum as spark_sum, round as spark_round, row_number
 )
 from pyspark.sql.window import Window
