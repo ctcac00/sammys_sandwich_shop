@@ -81,6 +81,33 @@ customer_dimension = df.select(
 
 # COMMAND ----------
 
+from pyspark.sql.types import (
+    StructType, StructField, StringType as ST, IntegerType, LongType,
+    BooleanType, DateType
+)
+
+_unknown_schema = StructType([
+    StructField("customer_id", ST(), True),
+    StructField("first_name", ST(), True),
+    StructField("last_name", ST(), True),
+    StructField("full_name", ST(), True),
+    StructField("email", ST(), True),
+    StructField("phone", ST(), True),
+    StructField("city", ST(), True),
+    StructField("state", ST(), True),
+    StructField("zip_code", ST(), True),
+    StructField("age_group", ST(), True),
+    StructField("loyalty_tier", ST(), True),
+    StructField("loyalty_tier_rank", IntegerType(), True),
+    StructField("signup_date", DateType(), True),
+    StructField("tenure_months", LongType(), True),
+    StructField("tenure_group", ST(), True),
+    StructField("marketing_opt_in", BooleanType(), True),
+    StructField("preferred_location_id", ST(), True),
+    StructField("effective_date", ST(), True),
+    StructField("is_current", BooleanType(), True),
+])
+
 unknown_customer = spark.createDataFrame([{
     "customer_id": UNKNOWN_CUSTOMER_ID,
     "first_name": "Guest",
@@ -101,7 +128,7 @@ unknown_customer = spark.createDataFrame([{
     "preferred_location_id": None,
     "effective_date": "1900-01-01",
     "is_current": True
-}])
+}], schema=_unknown_schema)
 
 # COMMAND ----------
 

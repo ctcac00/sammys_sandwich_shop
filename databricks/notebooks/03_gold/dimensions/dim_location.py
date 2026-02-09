@@ -75,6 +75,28 @@ location_dimension = df.select(
 # COMMAND ----------
 
 from pyspark.sql.functions import to_date as spark_to_date
+from pyspark.sql.types import (
+    StructType, StructField, StringType as ST, DoubleType, IntegerType,
+    BooleanType, DateType
+)
+
+_unknown_schema = StructType([
+    StructField("location_id", ST(), True),
+    StructField("location_name", ST(), True),
+    StructField("address", ST(), True),
+    StructField("city", ST(), True),
+    StructField("state", ST(), True),
+    StructField("zip_code", ST(), True),
+    StructField("region", ST(), True),
+    StructField("open_date", DateType(), True),
+    StructField("years_in_operation", DoubleType(), True),
+    StructField("seating_capacity", IntegerType(), True),
+    StructField("capacity_tier", ST(), True),
+    StructField("has_drive_thru", BooleanType(), True),
+    StructField("manager_name", ST(), True),
+    StructField("effective_date", ST(), True),
+    StructField("is_current", BooleanType(), True),
+])
 
 unknown_location = spark.createDataFrame([{
     "location_id": UNKNOWN_LOCATION_ID,
@@ -92,7 +114,7 @@ unknown_location = spark.createDataFrame([{
     "manager_name": None,
     "effective_date": "1900-01-01",
     "is_current": True
-}])
+}], schema=_unknown_schema)
 
 # COMMAND ----------
 
