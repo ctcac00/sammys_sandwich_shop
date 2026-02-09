@@ -36,6 +36,12 @@ TESTS_TIMEOUT = 600
 
 import time
 
+# Resolve absolute path for the current notebook's directory.
+# This is required because dbutils.notebook.run() with relative paths
+# does not work reliably in Databricks Repos.
+_nb_path = dbutils.notebook.entry_point.getDbutils().notebook().getContext().notebookPath().get()
+_nb_dir = "/".join(_nb_path.split("/")[:-1])
+
 pipeline_start = time.time()
 stage_results = []
 
@@ -44,6 +50,11 @@ def run_stage(stage_name, notebook_path, timeout):
     print(f"\n{'='*60}")
     print(f"Stage: {stage_name}")
     print(f"{'='*60}")
+    
+    # Resolve relative paths against the current notebook's directory
+    if notebook_path.startswith("..") or notebook_path.startswith("./"):
+        import os
+        notebook_path = os.path.normpath(f"{_nb_dir}/{notebook_path}")
     
     stage_start = time.time()
     try:

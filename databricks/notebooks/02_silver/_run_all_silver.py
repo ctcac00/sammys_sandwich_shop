@@ -56,6 +56,12 @@ enriched_notebooks = [
 
 import time
 
+# Resolve absolute path for the current notebook's directory.
+# This is required because dbutils.notebook.run() with relative paths
+# does not work reliably in Databricks Repos.
+_nb_path = dbutils.notebook.entry_point.getDbutils().notebook().getContext().notebookPath().get()
+_nb_dir = "/".join(_nb_path.split("/")[:-1])
+
 def run_notebooks(notebooks, layer_name):
     """Run a list of notebooks and return results."""
     start_time = time.time()
@@ -64,7 +70,7 @@ def run_notebooks(notebooks, layer_name):
     for notebook in notebooks:
         notebook_start = time.time()
         try:
-            dbutils.notebook.run(f"./{notebook}", timeout_seconds=300)
+            dbutils.notebook.run(f"{_nb_dir}/{notebook}", timeout_seconds=300)
             status = "SUCCESS"
         except Exception as e:
             status = f"FAILED: {str(e)}"
