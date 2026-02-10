@@ -1,0 +1,1399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Building Data Pipelines: Native vs dbt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ── Reset ── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #111113;
+  --bg-card: #1a1a1f;
+  --text: #e8e4df;
+  --text-dim: #8a8680;
+  --amber: #d4a24e;
+  --amber-glow: rgba(212, 162, 78, .15);
+  --teal: #4ecdc4;
+  --teal-glow: rgba(78, 205, 196, .12);
+  --font-heading: 'Space Grotesk', sans-serif;
+  --font-body: 'IBM Plex Sans', sans-serif;
+  --slide-transition: .6s cubic-bezier(.4, 0, .2, 1);
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Subtle grain texture overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: .035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px;
+}
+
+/* ── Progress Bar ── */
+#progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  width: 0%;
+  background: linear-gradient(90deg, var(--amber), var(--teal));
+  z-index: 1000;
+  transition: none;
+}
+
+/* ── Slide Track ── */
+#slide-track {
+  display: flex;
+  height: 100vh;
+  transition: transform var(--slide-transition);
+  position: relative;
+  z-index: 1;
+}
+
+.slide {
+  min-width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 8vw;
+  position: relative;
+}
+
+/* ── Shared Typography ── */
+h1, h2, h3 { font-family: var(--font-heading); font-weight: 600; line-height: 1.15; }
+h1 { font-size: clamp(2.2rem, 5vw, 4.2rem); letter-spacing: -.02em; }
+h2 { font-size: clamp(1.6rem, 3.2vw, 2.6rem); letter-spacing: -.015em; }
+h3 { font-size: clamp(1.1rem, 1.8vw, 1.4rem); }
+p, li { font-size: clamp(.95rem, 1.3vw, 1.15rem); line-height: 1.65; color: var(--text-dim); }
+li { margin-bottom: .45em; }
+
+.accent-amber { color: var(--amber); }
+.accent-teal  { color: var(--teal); }
+
+/* ── Slide 1 : Hero / Landing ── */
+.hero-content {
+  text-align: center;
+  max-width: 900px;
+}
+
+.hero-content h1 {
+  margin-bottom: .4em;
+}
+
+.hero-content h1 .highlight {
+  background: linear-gradient(135deg, var(--amber), var(--teal));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-subtitle {
+  font-size: clamp(1rem, 1.6vw, 1.3rem);
+  color: var(--text-dim);
+  font-weight: 300;
+  margin-bottom: 3rem;
+  font-style: italic;
+}
+
+/* Animated pipeline diagram */
+.pipeline-diagram {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin: 2.5rem auto 2rem;
+  max-width: 720px;
+  position: relative;
+}
+
+.pipeline-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .6rem;
+  flex: 0 0 auto;
+  opacity: 0;
+  animation: fadeInUp .7s ease forwards;
+}
+
+.pipeline-node:nth-child(1) { animation-delay: .3s; }
+.pipeline-node:nth-child(3) { animation-delay: .55s; }
+.pipeline-node:nth-child(5) { animation-delay: .8s; }
+
+.pipeline-arrow {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 50px;
+  opacity: 0;
+  animation: fadeIn .5s ease forwards;
+}
+.pipeline-arrow:nth-child(2) { animation-delay: .45s; }
+.pipeline-arrow:nth-child(4) { animation-delay: .7s; }
+
+.pipeline-arrow svg {
+  width: 48px;
+  height: 24px;
+}
+
+.node-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid rgba(255,255,255,.08);
+}
+
+.node-icon.snowflake-bg { background: #1a2a3a; }
+.node-icon.databricks-bg { background: #2a1a1a; }
+.node-icon.dbt-bg { background: #1a2a20; }
+
+.node-icon svg, .node-icon img { width: 38px; height: 38px; }
+
+.node-label {
+  font-family: var(--font-heading);
+  font-size: .82rem;
+  font-weight: 500;
+  color: var(--text-dim);
+  letter-spacing: .03em;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Side navigation arrows */
+.nav-arrow {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 150;
+  background: rgba(255, 255, 255, .04);
+  border: 1px solid rgba(255, 255, 255, .06);
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  opacity: .35;
+  transition: opacity .3s ease, background .3s ease, transform .3s ease;
+}
+.nav-arrow:hover {
+  opacity: .9;
+  background: var(--amber-glow);
+  transform: translateY(-50%) scale(1.1);
+}
+.nav-arrow:active {
+  transform: translateY(-50%) scale(.95);
+}
+.nav-arrow:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 3px;
+}
+.nav-arrow svg { width: 20px; height: 20px; }
+.nav-arrow-left  { left: 18px; }
+.nav-arrow-right { right: 18px; }
+
+/* ── Slides 2-4 : Comparison Layout ── */
+.comparison {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  width: 100%;
+  max-width: 1100px;
+}
+
+.comparison-header {
+  grid-column: 1 / -1;
+  text-align: center;
+  margin-bottom: .5rem;
+}
+
+.comparison-header h2 span {
+  color: var(--text-dim);
+  font-weight: 400;
+}
+
+.compare-card {
+  background: var(--bg-card);
+  border: 1px solid rgba(255,255,255,.06);
+  border-radius: 14px;
+  padding: 2rem 2.2rem;
+}
+
+.compare-card.native-card { border-top: 2.5px solid var(--amber); }
+.compare-card.dbt-card    { border-top: 2.5px solid var(--teal); }
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  margin-bottom: 1.4rem;
+}
+
+.card-header svg, .card-header img { width: 30px; height: 30px; flex-shrink: 0; }
+.card-header h3 { white-space: nowrap; }
+
+.pros-cons h4 {
+  font-family: var(--font-heading);
+  font-size: .85rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-bottom: .6rem;
+  margin-top: 1rem;
+}
+.pros-cons h4.pro-label  { color: var(--teal); }
+.pros-cons h4.con-label  { color: #c45b5b; }
+
+.pros-cons ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.pros-cons li {
+  padding-left: 1.2em;
+  position: relative;
+}
+
+.pros-cons li::before {
+  position: absolute;
+  left: 0;
+  font-weight: 600;
+}
+
+.pros-cons .pro-list li::before { content: '+'; color: var(--teal); }
+.pros-cons .con-list li::before { content: '\2013'; color: #c45b5b; }
+
+/* ── Code Comparison Slides ── */
+.code-comparison {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  width: 100%;
+  max-width: 1200px;
+}
+
+.code-comparison-header {
+  grid-column: 1 / -1;
+  text-align: center;
+  margin-bottom: .5rem;
+}
+
+.code-comparison-header p {
+  margin-top: .5rem;
+  font-style: italic;
+}
+
+.code-comparison-header code {
+  background: rgba(255,255,255,.08);
+  padding: .15em .45em;
+  border-radius: 4px;
+  font-size: .95em;
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+
+.code-panel {
+  background: var(--bg-card);
+  border: 1px solid rgba(255,255,255,.06);
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.code-panel.native-panel { border-top: 2.5px solid var(--amber); }
+.code-panel.dbt-panel    { border-top: 2.5px solid var(--teal); }
+
+.code-panel-header {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .7rem 1.2rem;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  background: rgba(255,255,255,.02);
+}
+
+.code-panel-header h3 {
+  font-size: clamp(.85rem, 1.1vw, 1.05rem);
+}
+
+.code-block {
+  padding: .8rem 1rem;
+  overflow-x: auto;
+  flex: 1;
+}
+
+.code-block pre {
+  margin: 0;
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Courier New', monospace;
+  font-size: clamp(.62rem, .75vw, .78rem);
+  line-height: 1.5;
+  color: #a9b7c6;
+  white-space: pre;
+  tab-size: 2;
+}
+
+.code-block .kw  { color: #c792ea; }
+.code-block .fn  { color: #82aaff; }
+.code-block .str { color: #c3e88d; }
+.code-block .cm  { color: #546e7a; font-style: italic; }
+.code-block .num { color: #f78c6c; }
+.code-block .ty  { color: #ffcb6b; }
+.code-block .dec { color: #82aaff; }
+
+.code-metric {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .65rem 1.2rem;
+  border-top: 1px solid rgba(255,255,255,.06);
+  background: rgba(255,255,255,.02);
+}
+
+.code-metric .metric-number {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.code-metric .metric-label {
+  font-size: .78rem;
+  color: var(--text-dim);
+}
+
+.code-metric.amber .metric-number { color: var(--amber); }
+.code-metric.teal  .metric-number { color: var(--teal); }
+
+/* ── Slide 5 : Summary Grid ── */
+.summary-wrap {
+  text-align: center;
+  width: 100%;
+  max-width: 1100px;
+}
+
+.summary-wrap h2 { margin-bottom: 2rem; }
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: 1.4fr repeat(4, 1fr);
+  gap: 0;
+  text-align: left;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.06);
+}
+
+.summary-grid .cell {
+  padding: .85rem 1rem;
+  background: var(--bg-card);
+  border-bottom: 1px solid rgba(255,255,255,.04);
+  font-size: clamp(.8rem, 1vw, .95rem);
+}
+
+.summary-grid .cell.header {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: clamp(.78rem, .95vw, .92rem);
+  background: #1e1e24;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  border-bottom: 2px solid rgba(255,255,255,.06);
+}
+
+.summary-grid .cell.row-label {
+  font-weight: 500;
+  color: var(--text);
+}
+
+.summary-tagline {
+  margin-top: 2.5rem;
+  font-size: clamp(1rem, 1.5vw, 1.25rem);
+  font-style: italic;
+  color: var(--text-dim);
+}
+
+/* ── Breadcrumb Navigation ── */
+#breadcrumb {
+  position: fixed;
+  top: 3px;
+  left: 0;
+  width: 100%;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: .55rem 1.5rem;
+  background: rgba(17, 17, 19, .85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  font-family: var(--font-heading);
+  font-size: .78rem;
+  letter-spacing: .02em;
+}
+
+.crumb {
+  background: none;
+  border: none;
+  padding: .3rem .6rem;
+  color: var(--text-dim);
+  opacity: .5;
+  font-family: var(--font-heading);
+  font-size: .78rem;
+  font-weight: 500;
+  letter-spacing: .02em;
+  cursor: pointer;
+  position: relative;
+  transition: color .25s ease, opacity .25s ease, transform .25s ease;
+  white-space: nowrap;
+}
+
+.crumb::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 1.5px;
+  background: var(--amber);
+  transition: width .3s ease, left .3s ease;
+}
+
+.crumb:hover {
+  color: var(--text);
+  opacity: .85;
+  transform: scale(1.05);
+}
+
+.crumb:hover::after {
+  width: 70%;
+  left: 15%;
+}
+
+.crumb:active {
+  background: var(--amber-glow);
+  border-radius: 6px;
+  transition: background .1s ease;
+}
+
+.crumb.active {
+  color: var(--amber);
+  opacity: 1;
+}
+
+.crumb.active::after {
+  width: 70%;
+  left: 15%;
+}
+
+.crumb:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.crumb-sep {
+  color: var(--text-dim);
+  opacity: .2;
+  font-size: .65rem;
+  margin: 0 .15rem;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ── Dots Navigation ── */
+#dots {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  z-index: 100;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.15);
+  cursor: pointer;
+  transition: background .3s, transform .3s;
+  border: none;
+  padding: 0;
+}
+.dot:hover { background: rgba(255,255,255,.35); }
+.dot.active { background: var(--amber); transform: scale(1.25); }
+
+/* ── Resume Button ── */
+#resume-btn {
+  position: fixed;
+  bottom: 30px;
+  right: 36px;
+  z-index: 200;
+  background: var(--amber);
+  color: var(--bg);
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: .88rem;
+  letter-spacing: .04em;
+  padding: .6rem 1.5rem;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .35s, transform .25s;
+  box-shadow: 0 4px 20px rgba(212, 162, 78, .3);
+}
+#resume-btn:hover { transform: scale(1.05); }
+#resume-btn:focus-visible { outline: 2px solid var(--teal); outline-offset: 3px; }
+#resume-btn.visible { opacity: 1; pointer-events: auto; }
+
+/* Pause indicator */
+#pause-badge {
+  position: fixed;
+  top: 52px;
+  right: 24px;
+  z-index: 200;
+  font-family: var(--font-heading);
+  font-size: .72rem;
+  font-weight: 500;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--amber);
+  opacity: 0;
+  transition: opacity .35s;
+}
+#pause-badge.visible { opacity: .7; }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .slide { padding: 60px 6vw; }
+  #breadcrumb { padding: .4rem .8rem; gap: 0; }
+  .crumb { font-size: .68rem; padding: .25rem .35rem; overflow: hidden; text-overflow: ellipsis; max-width: 90px; }
+  .crumb-sep { font-size: .55rem; margin: 0 .05rem; }
+  .comparison { grid-template-columns: 1fr; gap: 1.5rem; }
+  .code-comparison { grid-template-columns: 1fr; gap: 1.5rem; }
+  .code-block pre { font-size: .65rem; }
+  .summary-grid {
+    grid-template-columns: 1.2fr repeat(4, 1fr);
+    font-size: .75rem;
+  }
+  .summary-grid .cell { padding: .6rem .5rem; }
+  .pipeline-diagram { flex-wrap: wrap; gap: .5rem; }
+  .node-icon { width: 56px; height: 56px; border-radius: 12px; }
+  .node-icon svg { width: 28px; height: 28px; }
+}
+
+/* ── Reduced Motion ── */
+@media (prefers-reduced-motion: reduce) {
+  #slide-track { transition: none; }
+  #progress-bar { transition: none; }
+  .pipeline-node, .pipeline-arrow { animation: none; opacity: 1; }
+  .crumb { transition: none; }
+  .crumb::after { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- Progress bar -->
+<div id="progress-bar"></div>
+
+<!-- Breadcrumb navigation -->
+<nav id="breadcrumb" aria-label="Slide titles"></nav>
+
+<!-- Pause badge -->
+<div id="pause-badge">Paused</div>
+
+<!-- Resume button -->
+<button id="resume-btn" aria-label="Resume auto-play">&#9654;&ensp;Resume</button>
+
+<!-- Slide track -->
+<div id="slide-track">
+
+  <!-- ============================== SLIDE 1 : HERO ============================== -->
+  <section class="slide" role="group" aria-label="Landing">
+    <div class="hero-content">
+      <h1>Building Data Pipelines:<br><span class="highlight">Native vs dbt</span></h1>
+      <p class="hero-subtitle">"Same sandwich shop. Same data. Four different ways to transform it."</p>
+
+      <div class="pipeline-diagram">
+        <!-- Snowflake Node -->
+        <div class="pipeline-node">
+          <div class="node-icon snowflake-bg">
+            <img src="https://cdn.simpleicons.org/snowflake/29B5E8" alt="Snowflake logo">
+          </div>
+          <span class="node-label">Snowflake</span>
+        </div>
+
+        <!-- Arrow -->
+        <div class="pipeline-arrow">
+          <svg viewBox="0 0 48 24" fill="none"><path d="M4 12h32m0 0l-7-6m7 6l-7 6" stroke="var(--amber)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity=".5"/></svg>
+        </div>
+
+        <!-- Databricks Node -->
+        <div class="pipeline-node">
+          <div class="node-icon databricks-bg">
+            <img src="https://cdn.simpleicons.org/databricks/FF3621" alt="Databricks logo">
+          </div>
+          <span class="node-label">Databricks</span>
+        </div>
+
+        <!-- Arrow -->
+        <div class="pipeline-arrow">
+          <svg viewBox="0 0 48 24" fill="none"><path d="M4 12h32m0 0l-7-6m7 6l-7 6" stroke="var(--teal)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity=".5"/></svg>
+        </div>
+
+        <!-- dbt Node -->
+        <div class="pipeline-node">
+          <div class="node-icon dbt-bg">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <path fill="#ffffff" d="M15.613875 8.90125v6.124425h-1.241175v-0.624625c-0.1298 0.219025 -0.3163 0.3975 -0.543475 0.51105 -0.24335 0.121675 -0.519175 0.186575 -0.7949 0.186575 -0.340725 0.008125 -0.68145 -0.089225 -0.96535 -0.283925 -0.291975 -0.194675 -0.51915 -0.46235 -0.6652 -0.778725 -0.1622 -0.365025 -0.243325 -0.7544 -0.23525 -1.151875 -0.008075 -0.397475 0.07305 -0.78685 0.23525 -1.14375 0.14605 -0.308275 0.373225 -0.57595 0.657125 -0.762525 0.291975 -0.186575 0.6327 -0.2758 0.973425 -0.2677 0.26765 0 0.5353 0.0568 0.770575 0.178475 0.227175 0.11355 0.4137 0.2839 0.543475 0.494825v-2.068525l1.2655 -0.4137Zm-1.492575 4.915775c0.162175 -0.210925 0.2514 -0.519175 0.2514 -0.91665 0 -0.397475 -0.08105 -0.697625 -0.2514 -0.908525 -0.170375 -0.2109 -0.438125 -0.332575 -0.71385 -0.324475 -0.275825 -0.016225 -0.543475 0.10545 -0.722025 0.316375 -0.17025 0.2109 -0.259575 0.51105 -0.259575 0.9004 0 0.397475 0.089325 0.705725 0.259575 0.92475 0.170375 0.219025 0.4462 0.3407 0.722025 0.3326 0.308225 0 0.55155 -0.113575 0.71385 -0.324475Zm5.929775 -2.84725c0.291975 0.18655 0.51915 0.45425 0.657025 0.7625 0.162175 0.356925 0.243325 0.746275 0.23525 1.143775 0.008075 0.397475 -0.073075 0.79495 -0.23525 1.151875 -0.14605 0.31635 -0.373125 0.58405 -0.6652 0.778725 -0.2839 0.186575 -0.624625 0.283925 -0.96525 0.2758 -0.275825 0.008125 -0.551675 -0.056775 -0.795 -0.186575 -0.227075 -0.11355 -0.4137 -0.292025 -0.5354 -0.511025v0.6327h-1.24915V9.31495l1.257325 -0.4137v2.498425c0.1216 -0.219 0.308225 -0.397475 0.5353 -0.511025 0.243425 -0.1298 0.5111 -0.194675 0.786925 -0.186575 0.340625 -0.0081 0.68135 0.089225 0.973425 0.2677Zm-0.61655 2.839125c0.17035 -0.219025 0.2515 -0.527275 0.2515 -0.93285 0 -0.389375 -0.08115 -0.689525 -0.2515 -0.900425 -0.170375 -0.2109 -0.405625 -0.31635 -0.71385 -0.31635 -0.275725 -0.016225 -0.543475 0.10545 -0.721925 0.324475 -0.17035 0.219 -0.2515 0.51915 -0.2515 0.908525 0 0.397475 0.08115 0.705725 0.2515 0.916625 0.170375 0.219025 0.438025 0.3407 0.721925 0.324475 0.275825 0.016225 0.543475 -0.10545 0.71385 -0.324475Zm3.24475 -2.0604v1.638575c0 0.23525 0.0649 0.4056 0.178525 0.51105 0.1298 0.113575 0.300075 0.17035 0.4786 0.16225 0.137875 0 0.2839 -0.02435 0.4137 -0.0568v0.973425c-0.235275 0.081125 -0.4786 0.121675 -0.722025 0.113575 -0.519075 0 -0.9166 -0.146025 -1.19245 -0.43805 -0.275725 -0.292025 -0.413675 -0.705725 -0.413675 -1.2411V9.817875l1.257325 -0.405575v1.395225h1.070825v0.940975h-1.070825Z" stroke-width="0.25"/>
+              <path fill="#ff694a" d="M8.840425 7.8873c0.2109 0.2028 0.3488 0.4705 0.38125 0.762525 0 0.121675 -0.03245 0.2028 -0.10545 0.3569 -0.073 0.154125 -0.973425 1.7116 -1.2411 2.141525 -0.154125 0.251475 -0.23525 0.551625 -0.23525 0.843625 0 0.30015 0.081125 0.592175 0.23525 0.84365 0.267675 0.429925 1.1681 1.9955 1.2411 2.149625 0.073 0.154125 0.10545 0.227125 0.10545 0.3488 -0.03245 0.292025 -0.16225 0.559725 -0.37315 0.7544 -0.2028 0.2109 -0.470475 0.348825 -0.7544 0.37315 -0.121675 0 -0.2028 -0.03245 -0.3488 -0.10545 -0.146025 -0.073025 -1.735925 -0.9491 -2.16585 -1.216775 -0.03245 -0.016225 -0.0649 -0.040575 -0.10545 -0.0568l-2.1253 -1.257325c0.04865 0.4056 0.227125 0.794975 0.51915 1.078875 0.056775 0.056775 0.113575 0.10545 0.17845 0.154125 -0.048675 0.024325 -0.10545 0.048675 -0.154125 0.081125 -0.429925 0.267675 -1.9955 1.1681 -2.1496225 1.2411 -0.1541225 0.073 -0.2271325 0.10545 -0.3569225 0.10545 -0.292025 -0.03245 -0.559715 -0.162225 -0.7544 -0.373125 -0.2109075 -0.2028 -0.3488075 -0.4705 -0.381255 -0.762525 0.0081125 -0.121675 0.04056 -0.24335 0.105455 -0.3488 0.073005 -0.154125 0.9734175 -1.719725 1.2411025 -2.14965 0.154135 -0.25145 0.2352475 -0.543475 0.2352475 -0.843625 0 -0.300125 -0.0811125 -0.59215 -0.2352475 -0.843625 -0.267685 -0.44615 -1.17621 -2.011725 -1.2411025 -2.16585 -0.064895 -0.10545 -0.0973425 -0.227125 -0.105455 -0.3488 0.0324475 -0.292025 0.1622375 -0.559725 0.373145 -0.762525 0.202795 -0.2109 0.470485 -0.3407 0.76251 -0.37315 0.121675 0.008125 0.24335 0.040575 0.3569225 0.105475 0.12979 0.056775 1.2735475 0.72195 1.8819475 1.078875l0.1379 0.0811c0.04865 0.03245 0.089225 0.056775 0.121675 0.073025l0.0649 0.04055 2.16585 1.281675c-0.048675 -0.486725 -0.30015 -0.932875 -0.6895 -1.233 0.048675 -0.02435 0.10545 -0.048675 0.154125 -0.081125 0.429925 -0.2677 1.9955 -1.176225 2.149625 -1.2411 0.10545 -0.0649 0.227125 -0.09735 0.356925 -0.105475 0.2839 0.03245 0.5516 0.16225 0.7544 0.37315ZM4.8494 12.57595l0.462375 -0.4624c0.0649 -0.064875 0.0649 -0.162225 0 -0.227125l-0.462375 -0.462375c-0.0649 -0.0649 -0.162225 -0.0649 -0.227125 0l-0.462375 0.462375c-0.0649 0.0649 -0.0649 0.16225 0 0.227125l0.462375 0.4624c0.056775 0.056775 0.162225 0.056775 0.227125 0Z" stroke-width="0.25"/>
+            </svg>
+          </div>
+          <span class="node-label">dbt</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ==================== SLIDE 2 : Snowflake Stored Procs vs dbt ==================== -->
+  <section class="slide" role="group" aria-label="Snowflake Stored Procs vs dbt">
+    <div class="comparison">
+      <div class="comparison-header">
+        <h2>Snowflake Stored Procs <span>vs</span> dbt</h2>
+      </div>
+
+      <!-- Native card -->
+      <div class="compare-card native-card">
+        <div class="card-header">
+          <img src="https://cdn.simpleicons.org/snowflake/29B5E8" alt="Snowflake logo">
+          <h3 class="accent-amber">Snowflake Stored Procedures</h3>
+        </div>
+        <div class="pros-cons">
+          <h4 class="pro-label">Pros</h4>
+          <ul class="pro-list">
+            <li>Placeholder pro #1 - runs entirely inside Snowflake</li>
+            <li>Placeholder pro #2 - fine-grained procedural control</li>
+            <li>Placeholder pro #3 - no external tooling required</li>
+          </ul>
+          <h4 class="con-label">Cons</h4>
+          <ul class="con-list">
+            <li>Placeholder con #1 - verbose SQL/JavaScript mix</li>
+            <li>Placeholder con #2 - harder to test and version</li>
+            <li>Placeholder con #3 - manual dependency management</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- dbt card -->
+      <div class="compare-card dbt-card">
+        <div class="card-header">
+          <svg viewBox="0 0 24 24" fill="none"><path fill="#ffffff" d="M15.613875 8.90125v6.124425h-1.241175v-0.624625c-0.1298 0.219025 -0.3163 0.3975 -0.543475 0.51105 -0.24335 0.121675 -0.519175 0.186575 -0.7949 0.186575 -0.340725 0.008125 -0.68145 -0.089225 -0.96535 -0.283925 -0.291975 -0.194675 -0.51915 -0.46235 -0.6652 -0.778725 -0.1622 -0.365025 -0.243325 -0.7544 -0.23525 -1.151875 -0.008075 -0.397475 0.07305 -0.78685 0.23525 -1.14375 0.14605 -0.308275 0.373225 -0.57595 0.657125 -0.762525 0.291975 -0.186575 0.6327 -0.2758 0.973425 -0.2677 0.26765 0 0.5353 0.0568 0.770575 0.178475 0.227175 0.11355 0.4137 0.2839 0.543475 0.494825v-2.068525l1.2655 -0.4137Zm-1.492575 4.915775c0.162175 -0.210925 0.2514 -0.519175 0.2514 -0.91665 0 -0.397475 -0.08105 -0.697625 -0.2514 -0.908525 -0.170375 -0.2109 -0.438125 -0.332575 -0.71385 -0.324475 -0.275825 -0.016225 -0.543475 0.10545 -0.722025 0.316375 -0.17025 0.2109 -0.259575 0.51105 -0.259575 0.9004 0 0.397475 0.089325 0.705725 0.259575 0.92475 0.170375 0.219025 0.4462 0.3407 0.722025 0.3326 0.308225 0 0.55155 -0.113575 0.71385 -0.324475Zm5.929775 -2.84725c0.291975 0.18655 0.51915 0.45425 0.657025 0.7625 0.162175 0.356925 0.243325 0.746275 0.23525 1.143775 0.008075 0.397475 -0.073075 0.79495 -0.23525 1.151875 -0.14605 0.31635 -0.373125 0.58405 -0.6652 0.778725 -0.2839 0.186575 -0.624625 0.283925 -0.96525 0.2758 -0.275825 0.008125 -0.551675 -0.056775 -0.795 -0.186575 -0.227075 -0.11355 -0.4137 -0.292025 -0.5354 -0.511025v0.6327h-1.24915V9.31495l1.257325 -0.4137v2.498425c0.1216 -0.219 0.308225 -0.397475 0.5353 -0.511025 0.243425 -0.1298 0.5111 -0.194675 0.786925 -0.186575 0.340625 -0.0081 0.68135 0.089225 0.973425 0.2677Zm-0.61655 2.839125c0.17035 -0.219025 0.2515 -0.527275 0.2515 -0.93285 0 -0.389375 -0.08115 -0.689525 -0.2515 -0.900425 -0.170375 -0.2109 -0.405625 -0.31635 -0.71385 -0.31635 -0.275725 -0.016225 -0.543475 0.10545 -0.721925 0.324475 -0.17035 0.219 -0.2515 0.51915 -0.2515 0.908525 0 0.397475 0.08115 0.705725 0.2515 0.916625 0.170375 0.219025 0.438025 0.3407 0.721925 0.324475 0.275825 0.016225 0.543475 -0.10545 0.71385 -0.324475Zm3.24475 -2.0604v1.638575c0 0.23525 0.0649 0.4056 0.178525 0.51105 0.1298 0.113575 0.300075 0.17035 0.4786 0.16225 0.137875 0 0.2839 -0.02435 0.4137 -0.0568v0.973425c-0.235275 0.081125 -0.4786 0.121675 -0.722025 0.113575 -0.519075 0 -0.9166 -0.146025 -1.19245 -0.43805 -0.275725 -0.292025 -0.413675 -0.705725 -0.413675 -1.2411V9.817875l1.257325 -0.405575v1.395225h1.070825v0.940975h-1.070825Z" stroke-width="0.25"/><path fill="#ff694a" d="M8.840425 7.8873c0.2109 0.2028 0.3488 0.4705 0.38125 0.762525 0 0.121675 -0.03245 0.2028 -0.10545 0.3569 -0.073 0.154125 -0.973425 1.7116 -1.2411 2.141525 -0.154125 0.251475 -0.23525 0.551625 -0.23525 0.843625 0 0.30015 0.081125 0.592175 0.23525 0.84365 0.267675 0.429925 1.1681 1.9955 1.2411 2.149625 0.073 0.154125 0.10545 0.227125 0.10545 0.3488 -0.03245 0.292025 -0.16225 0.559725 -0.37315 0.7544 -0.2028 0.2109 -0.470475 0.348825 -0.7544 0.37315 -0.121675 0 -0.2028 -0.03245 -0.3488 -0.10545 -0.146025 -0.073025 -1.735925 -0.9491 -2.16585 -1.216775 -0.03245 -0.016225 -0.0649 -0.040575 -0.10545 -0.0568l-2.1253 -1.257325c0.04865 0.4056 0.227125 0.794975 0.51915 1.078875 0.056775 0.056775 0.113575 0.10545 0.17845 0.154125 -0.048675 0.024325 -0.10545 0.048675 -0.154125 0.081125 -0.429925 0.267675 -1.9955 1.1681 -2.1496225 1.2411 -0.1541225 0.073 -0.2271325 0.10545 -0.3569225 0.10545 -0.292025 -0.03245 -0.559715 -0.162225 -0.7544 -0.373125 -0.2109075 -0.2028 -0.3488075 -0.4705 -0.381255 -0.762525 0.0081125 -0.121675 0.04056 -0.24335 0.105455 -0.3488 0.073005 -0.154125 0.9734175 -1.719725 1.2411025 -2.14965 0.154135 -0.25145 0.2352475 -0.543475 0.2352475 -0.843625 0 -0.300125 -0.0811125 -0.59215 -0.2352475 -0.843625 -0.267685 -0.44615 -1.17621 -2.011725 -1.2411025 -2.16585 -0.064895 -0.10545 -0.0973425 -0.227125 -0.105455 -0.3488 0.0324475 -0.292025 0.1622375 -0.559725 0.373145 -0.762525 0.202795 -0.2109 0.470485 -0.3407 0.76251 -0.37315 0.121675 0.008125 0.24335 0.040575 0.3569225 0.105475 0.12979 0.056775 1.2735475 0.72195 1.8819475 1.078875l0.1379 0.0811c0.04865 0.03245 0.089225 0.056775 0.121675 0.073025l0.0649 0.04055 2.16585 1.281675c-0.048675 -0.486725 -0.30015 -0.932875 -0.6895 -1.233 0.048675 -0.02435 0.10545 -0.048675 0.154125 -0.081125 0.429925 -0.2677 1.9955 -1.176225 2.149625 -1.2411 0.10545 -0.0649 0.227125 -0.09735 0.356925 -0.105475 0.2839 0.03245 0.5516 0.16225 0.7544 0.37315ZM4.8494 12.57595l0.462375 -0.4624c0.0649 -0.064875 0.0649 -0.162225 0 -0.227125l-0.462375 -0.462375c-0.0649 -0.0649 -0.162225 -0.0649 -0.227125 0l-0.462375 0.462375c-0.0649 0.0649 -0.0649 0.16225 0 0.227125l0.462375 0.4624c0.056775 0.056775 0.162225 0.056775 0.227125 0Z" stroke-width="0.25"/></svg>
+          <h3 class="accent-teal">dbt</h3>
+        </div>
+        <div class="pros-cons">
+          <h4 class="pro-label">Pros</h4>
+          <ul class="pro-list">
+            <li>Placeholder pro #1 - declarative SQL models</li>
+            <li>Placeholder pro #2 - built-in testing framework</li>
+            <li>Placeholder pro #3 - automatic DAG resolution</li>
+          </ul>
+          <h4 class="con-label">Cons</h4>
+          <ul class="con-list">
+            <li>Placeholder con #1 - additional tool to learn</li>
+            <li>Placeholder con #2 - limited procedural logic</li>
+            <li>Placeholder con #3 - requires external orchestration</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== CODE COMPARE: Stored Procs vs dbt ==================== -->
+  <section class="slide" role="group" aria-label="SP Code Compare">
+    <div class="code-comparison">
+      <div class="code-comparison-header">
+        <h2>The Code: <span class="accent-amber">Stored Proc</span> vs <span class="accent-teal">dbt</span></h2>
+        <p>Building <code>stg_orders</code> &mdash; same transformation, different overhead</p>
+      </div>
+
+      <!-- Native: Stored Procedure -->
+      <div class="code-panel native-panel">
+        <div class="code-panel-header">
+          <h3 class="accent-amber">Snowflake Stored Procedure</h3>
+        </div>
+        <div class="code-block">
+<pre><span class="cm">-- sp_enrich_orders.sql  (118 lines)</span>
+<span class="kw">CREATE OR REPLACE PROCEDURE</span> sp_enrich_orders()
+<span class="kw">RETURNS</span> <span class="ty">VARCHAR</span>
+<span class="kw">LANGUAGE</span> SQL
+<span class="kw">AS</span> $$
+<span class="kw">DECLARE</span>
+    v_rows_inserted <span class="ty">INTEGER</span>;
+<span class="kw">BEGIN</span>
+    <span class="kw">TRUNCATE TABLE</span> enriched_orders;
+
+    <span class="kw">INSERT INTO</span> enriched_orders (
+        order_id, customer_id, employee_id,
+        location_id, order_date, order_time,
+        order_type, subtotal, tax_amount,
+        discount_amount, total_amount,
+        payment_method, order_period,
+        is_weekend, has_discount, has_tip,
+        <span class="cm">/* ... 8 more columns ... */</span>
+    )
+    <span class="kw">SELECT</span>
+        o.order_id,
+        <span class="fn">NULLIF</span>(o.customer_id, <span class="str">'NULL'</span>),
+        <span class="fn">TRY_TO_DATE</span>(o.order_date, <span class="str">'YYYY-MM-DD'</span>),
+        <span class="fn">TRY_TO_NUMBER</span>(o.subtotal, <span class="num">10</span>, <span class="num">2</span>),
+        <span class="kw">CASE WHEN</span> <span class="fn">HOUR</span>(...) <span class="kw">BETWEEN</span> <span class="num">6</span> <span class="kw">AND</span> <span class="num">10</span>
+             <span class="kw">THEN</span> <span class="str">'Breakfast'</span>
+             <span class="kw">WHEN</span> ... <span class="kw">THEN</span> <span class="str">'Lunch'</span>
+        <span class="kw">END AS</span> order_period,
+        <span class="cm">/* ... more transforms ... */</span>
+    <span class="kw">FROM</span> SAMMYS_RAW.orders o
+    <span class="kw">LEFT JOIN</span> (...) ic <span class="kw">ON</span> o.order_id = ic.order_id
+    <span class="kw">WHERE</span> o.order_id <span class="kw">IS NOT NULL</span>;
+
+    v_rows_inserted := <span class="fn">SQLROWCOUNT</span>;
+    <span class="kw">RETURN</span> <span class="str">'SUCCESS: '</span> || v_rows_inserted;
+<span class="kw">END</span>;
+$$;</pre>
+        </div>
+        <div class="code-metric amber">
+          <span class="metric-number">~120</span>
+          <span class="metric-label">lines &mdash; DDL wrapper, DECLARE, INSERT INTO column list, manual row counting</span>
+        </div>
+      </div>
+
+      <!-- dbt -->
+      <div class="code-panel dbt-panel">
+        <div class="code-panel-header">
+          <h3 class="accent-teal">dbt Model</h3>
+        </div>
+        <div class="code-block">
+<pre><span class="cm">-- models/staging/stg_orders.sql</span>
+
+<span class="kw">with</span> source <span class="kw">as</span> (
+    <span class="kw">select</span> * <span class="kw">from</span> {{ <span class="fn">source</span>(<span class="str">'raw'</span>, <span class="str">'orders'</span>) }}
+),
+
+staged <span class="kw">as</span> (
+    <span class="kw">select</span>
+        order_id,
+        <span class="fn">trim</span>(customer_id) <span class="kw">as</span> customer_id,
+        <span class="fn">trim</span>(employee_id) <span class="kw">as</span> employee_id,
+        <span class="fn">trim</span>(location_id) <span class="kw">as</span> location_id,
+        <span class="fn">try_to_date</span>(order_date) <span class="kw">as</span> order_date,
+        <span class="fn">try_to_time</span>(order_time) <span class="kw">as</span> order_time,
+        <span class="fn">trim</span>(order_type) <span class="kw">as</span> order_type,
+        <span class="fn">trim</span>(order_status) <span class="kw">as</span> order_status,
+        <span class="fn">trim</span>(payment_method) <span class="kw">as</span> payment_method,
+        <span class="fn">coalesce</span>(<span class="fn">try_to_number</span>(subtotal,
+          <span class="num">10</span>, <span class="num">2</span>), <span class="num">0</span>) <span class="kw">as</span> subtotal,
+        <span class="cm">/* ... more amounts ... */</span>
+    <span class="kw">from</span> source
+    <span class="kw">where</span> order_id <span class="kw">is not null</span>
+)
+
+<span class="kw">select</span> * <span class="kw">from</span> staged</pre>
+        </div>
+        <div class="code-metric teal">
+          <span class="metric-number">~40</span>
+          <span class="metric-label">lines &mdash; pure business logic. dbt handles DDL, execution &amp; logging.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== SLIDE 3 : Databricks Notebooks vs dbt ==================== -->
+  <section class="slide" role="group" aria-label="Databricks Notebooks vs dbt">
+    <div class="comparison">
+      <div class="comparison-header">
+        <h2>Databricks Notebooks <span>vs</span> dbt</h2>
+      </div>
+
+      <!-- Native card -->
+      <div class="compare-card native-card">
+        <div class="card-header">
+          <img src="https://cdn.simpleicons.org/databricks/FF3621" alt="Databricks logo">
+          <h3 class="accent-amber">Databricks Notebooks</h3>
+        </div>
+        <div class="pros-cons">
+          <h4 class="pro-label">Pros</h4>
+          <ul class="pro-list">
+            <li>Placeholder pro #1 - full PySpark flexibility</li>
+            <li>Placeholder pro #2 - interactive development</li>
+            <li>Placeholder pro #3 - rich visualization built-in</li>
+          </ul>
+          <h4 class="con-label">Cons</h4>
+          <ul class="con-list">
+            <li>Placeholder con #1 - manual orchestration required</li>
+            <li>Placeholder con #2 - 65+ notebooks to maintain</li>
+            <li>Placeholder con #3 - testing is ad-hoc</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- dbt card -->
+      <div class="compare-card dbt-card">
+        <div class="card-header">
+          <svg viewBox="0 0 24 24" fill="none"><path fill="#ffffff" d="M15.613875 8.90125v6.124425h-1.241175v-0.624625c-0.1298 0.219025 -0.3163 0.3975 -0.543475 0.51105 -0.24335 0.121675 -0.519175 0.186575 -0.7949 0.186575 -0.340725 0.008125 -0.68145 -0.089225 -0.96535 -0.283925 -0.291975 -0.194675 -0.51915 -0.46235 -0.6652 -0.778725 -0.1622 -0.365025 -0.243325 -0.7544 -0.23525 -1.151875 -0.008075 -0.397475 0.07305 -0.78685 0.23525 -1.14375 0.14605 -0.308275 0.373225 -0.57595 0.657125 -0.762525 0.291975 -0.186575 0.6327 -0.2758 0.973425 -0.2677 0.26765 0 0.5353 0.0568 0.770575 0.178475 0.227175 0.11355 0.4137 0.2839 0.543475 0.494825v-2.068525l1.2655 -0.4137Zm-1.492575 4.915775c0.162175 -0.210925 0.2514 -0.519175 0.2514 -0.91665 0 -0.397475 -0.08105 -0.697625 -0.2514 -0.908525 -0.170375 -0.2109 -0.438125 -0.332575 -0.71385 -0.324475 -0.275825 -0.016225 -0.543475 0.10545 -0.722025 0.316375 -0.17025 0.2109 -0.259575 0.51105 -0.259575 0.9004 0 0.397475 0.089325 0.705725 0.259575 0.92475 0.170375 0.219025 0.4462 0.3407 0.722025 0.3326 0.308225 0 0.55155 -0.113575 0.71385 -0.324475Zm5.929775 -2.84725c0.291975 0.18655 0.51915 0.45425 0.657025 0.7625 0.162175 0.356925 0.243325 0.746275 0.23525 1.143775 0.008075 0.397475 -0.073075 0.79495 -0.23525 1.151875 -0.14605 0.31635 -0.373125 0.58405 -0.6652 0.778725 -0.2839 0.186575 -0.624625 0.283925 -0.96525 0.2758 -0.275825 0.008125 -0.551675 -0.056775 -0.795 -0.186575 -0.227075 -0.11355 -0.4137 -0.292025 -0.5354 -0.511025v0.6327h-1.24915V9.31495l1.257325 -0.4137v2.498425c0.1216 -0.219 0.308225 -0.397475 0.5353 -0.511025 0.243425 -0.1298 0.5111 -0.194675 0.786925 -0.186575 0.340625 -0.0081 0.68135 0.089225 0.973425 0.2677Zm-0.61655 2.839125c0.17035 -0.219025 0.2515 -0.527275 0.2515 -0.93285 0 -0.389375 -0.08115 -0.689525 -0.2515 -0.900425 -0.170375 -0.2109 -0.405625 -0.31635 -0.71385 -0.31635 -0.275725 -0.016225 -0.543475 0.10545 -0.721925 0.324475 -0.17035 0.219 -0.2515 0.51915 -0.2515 0.908525 0 0.397475 0.08115 0.705725 0.2515 0.916625 0.170375 0.219025 0.438025 0.3407 0.721925 0.324475 0.275825 0.016225 0.543475 -0.10545 0.71385 -0.324475Zm3.24475 -2.0604v1.638575c0 0.23525 0.0649 0.4056 0.178525 0.51105 0.1298 0.113575 0.300075 0.17035 0.4786 0.16225 0.137875 0 0.2839 -0.02435 0.4137 -0.0568v0.973425c-0.235275 0.081125 -0.4786 0.121675 -0.722025 0.113575 -0.519075 0 -0.9166 -0.146025 -1.19245 -0.43805 -0.275725 -0.292025 -0.413675 -0.705725 -0.413675 -1.2411V9.817875l1.257325 -0.405575v1.395225h1.070825v0.940975h-1.070825Z" stroke-width="0.25"/><path fill="#ff694a" d="M8.840425 7.8873c0.2109 0.2028 0.3488 0.4705 0.38125 0.762525 0 0.121675 -0.03245 0.2028 -0.10545 0.3569 -0.073 0.154125 -0.973425 1.7116 -1.2411 2.141525 -0.154125 0.251475 -0.23525 0.551625 -0.23525 0.843625 0 0.30015 0.081125 0.592175 0.23525 0.84365 0.267675 0.429925 1.1681 1.9955 1.2411 2.149625 0.073 0.154125 0.10545 0.227125 0.10545 0.3488 -0.03245 0.292025 -0.16225 0.559725 -0.37315 0.7544 -0.2028 0.2109 -0.470475 0.348825 -0.7544 0.37315 -0.121675 0 -0.2028 -0.03245 -0.3488 -0.10545 -0.146025 -0.073025 -1.735925 -0.9491 -2.16585 -1.216775 -0.03245 -0.016225 -0.0649 -0.040575 -0.10545 -0.0568l-2.1253 -1.257325c0.04865 0.4056 0.227125 0.794975 0.51915 1.078875 0.056775 0.056775 0.113575 0.10545 0.17845 0.154125 -0.048675 0.024325 -0.10545 0.048675 -0.154125 0.081125 -0.429925 0.267675 -1.9955 1.1681 -2.1496225 1.2411 -0.1541225 0.073 -0.2271325 0.10545 -0.3569225 0.10545 -0.292025 -0.03245 -0.559715 -0.162225 -0.7544 -0.373125 -0.2109075 -0.2028 -0.3488075 -0.4705 -0.381255 -0.762525 0.0081125 -0.121675 0.04056 -0.24335 0.105455 -0.3488 0.073005 -0.154125 0.9734175 -1.719725 1.2411025 -2.14965 0.154135 -0.25145 0.2352475 -0.543475 0.2352475 -0.843625 0 -0.300125 -0.0811125 -0.59215 -0.2352475 -0.843625 -0.267685 -0.44615 -1.17621 -2.011725 -1.2411025 -2.16585 -0.064895 -0.10545 -0.0973425 -0.227125 -0.105455 -0.3488 0.0324475 -0.292025 0.1622375 -0.559725 0.373145 -0.762525 0.202795 -0.2109 0.470485 -0.3407 0.76251 -0.37315 0.121675 0.008125 0.24335 0.040575 0.3569225 0.105475 0.12979 0.056775 1.2735475 0.72195 1.8819475 1.078875l0.1379 0.0811c0.04865 0.03245 0.089225 0.056775 0.121675 0.073025l0.0649 0.04055 2.16585 1.281675c-0.048675 -0.486725 -0.30015 -0.932875 -0.6895 -1.233 0.048675 -0.02435 0.10545 -0.048675 0.154125 -0.081125 0.429925 -0.2677 1.9955 -1.176225 2.149625 -1.2411 0.10545 -0.0649 0.227125 -0.09735 0.356925 -0.105475 0.2839 0.03245 0.5516 0.16225 0.7544 0.37315ZM4.8494 12.57595l0.462375 -0.4624c0.0649 -0.064875 0.0649 -0.162225 0 -0.227125l-0.462375 -0.462375c-0.0649 -0.0649 -0.162225 -0.0649 -0.227125 0l-0.462375 0.462375c-0.0649 0.0649 -0.0649 0.16225 0 0.227125l0.462375 0.4624c0.056775 0.056775 0.162225 0.056775 0.227125 0Z" stroke-width="0.25"/></svg>
+          <h3 class="accent-teal">dbt</h3>
+        </div>
+        <div class="pros-cons">
+          <h4 class="pro-label">Pros</h4>
+          <ul class="pro-list">
+            <li>Placeholder pro #1 - single SELECT per model</li>
+            <li>Placeholder pro #2 - Jinja macros for DRY code</li>
+            <li>Placeholder pro #3 - documentation auto-generated</li>
+          </ul>
+          <h4 class="con-label">Cons</h4>
+          <ul class="con-list">
+            <li>Placeholder con #1 - SQL-only transformations</li>
+            <li>Placeholder con #2 - Spark-specific features unavailable</li>
+            <li>Placeholder con #3 - separate scheduling layer needed</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== CODE COMPARE: Notebooks vs dbt ==================== -->
+  <section class="slide" role="group" aria-label="Notebook Code Compare">
+    <div class="code-comparison">
+      <div class="code-comparison-header">
+        <h2>The Code: <span class="accent-amber">Notebook</span> vs <span class="accent-teal">dbt</span></h2>
+        <p>Building <code>stg_orders</code> &mdash; same transformation, different paradigm</p>
+      </div>
+
+      <!-- Native: Databricks Notebook -->
+      <div class="code-panel native-panel">
+        <div class="code-panel-header">
+          <h3 class="accent-amber">Databricks Notebook</h3>
+        </div>
+        <div class="code-block">
+<pre><span class="cm"># stg_orders.py  (83 lines, 7 cells)</span>
+<span class="cm"># MAGIC %run ../../config</span>
+
+<span class="kw">from</span> pyspark.sql.functions <span class="kw">import</span> (
+    col, trim, to_date, to_timestamp,
+    coalesce, lit
+)
+<span class="kw">from</span> pyspark.sql.types <span class="kw">import</span> DoubleType
+
+df = spark.table(bronze_table(<span class="str">"orders"</span>))
+<span class="fn">print</span>(<span class="str">f"Loaded {df.count()} rows"</span>)
+
+staged = df.select(
+    col(<span class="str">"order_id"</span>),
+    trim(col(<span class="str">"customer_id"</span>)).alias(<span class="str">"customer_id"</span>),
+    trim(col(<span class="str">"employee_id"</span>)).alias(<span class="str">"employee_id"</span>),
+    trim(col(<span class="str">"location_id"</span>)).alias(<span class="str">"location_id"</span>),
+    to_date(col(<span class="str">"order_date"</span>), <span class="str">"yyyy-MM-dd"</span>)
+        .alias(<span class="str">"order_date"</span>),
+    coalesce(col(<span class="str">"subtotal"</span>)
+        .cast(DoubleType()), lit(<span class="num">0.0</span>))
+        .alias(<span class="str">"subtotal"</span>),
+    <span class="cm"># ... 7 more columns ...</span>
+).filter(col(<span class="str">"order_id"</span>).isNotNull())
+
+table_name = silver_table(<span class="str">"stg_orders"</span>)
+staged.write \
+    .format(<span class="str">"delta"</span>) \
+    .mode(<span class="str">"overwrite"</span>) \
+    .option(<span class="str">"overwriteSchema"</span>, <span class="str">"true"</span>) \
+    .saveAsTable(table_name)
+<span class="fn">print</span>(<span class="str">f"Written {staged.count()} rows"</span>)</pre>
+        </div>
+        <div class="code-metric amber">
+          <span class="metric-number">83</span>
+          <span class="metric-label">lines &mdash; Python imports, PySpark API, manual write, format config</span>
+        </div>
+      </div>
+
+      <!-- dbt -->
+      <div class="code-panel dbt-panel">
+        <div class="code-panel-header">
+          <h3 class="accent-teal">dbt Model</h3>
+        </div>
+        <div class="code-block">
+<pre><span class="cm">-- models/staging/stg_orders.sql</span>
+
+<span class="kw">with</span> source <span class="kw">as</span> (
+    <span class="kw">select</span> * <span class="kw">from</span> {{ <span class="fn">source</span>(<span class="str">'raw'</span>, <span class="str">'orders'</span>) }}
+),
+
+staged <span class="kw">as</span> (
+    <span class="kw">select</span>
+        order_id,
+        <span class="fn">trim</span>(customer_id) <span class="kw">as</span> customer_id,
+        <span class="fn">trim</span>(employee_id) <span class="kw">as</span> employee_id,
+        <span class="fn">trim</span>(location_id) <span class="kw">as</span> location_id,
+        <span class="fn">try_to_date</span>(order_date) <span class="kw">as</span> order_date,
+        <span class="fn">try_to_time</span>(order_time) <span class="kw">as</span> order_time,
+        <span class="fn">trim</span>(order_type) <span class="kw">as</span> order_type,
+        <span class="fn">trim</span>(order_status) <span class="kw">as</span> order_status,
+        <span class="fn">trim</span>(payment_method) <span class="kw">as</span> payment_method,
+        <span class="fn">coalesce</span>(<span class="fn">try_to_number</span>(subtotal,
+          <span class="num">10</span>, <span class="num">2</span>), <span class="num">0</span>) <span class="kw">as</span> subtotal,
+        <span class="cm">/* ... more amounts ... */</span>
+    <span class="kw">from</span> source
+    <span class="kw">where</span> order_id <span class="kw">is not null</span>
+)
+
+<span class="kw">select</span> * <span class="kw">from</span> staged</pre>
+        </div>
+        <div class="code-metric teal">
+          <span class="metric-number">~40</span>
+          <span class="metric-label">lines &mdash; no imports, no write logic. Just SQL that anyone can read.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== SLIDE 4 : Databricks DLT vs dbt ==================== -->
+  <section class="slide" role="group" aria-label="Databricks DLT vs dbt">
+    <div class="comparison">
+      <div class="comparison-header">
+        <h2>Databricks DLT <span>vs</span> dbt</h2>
+      </div>
+
+      <!-- Native card -->
+      <div class="compare-card native-card">
+        <div class="card-header">
+          <img src="https://cdn.simpleicons.org/databricks/FF3621" alt="Databricks logo">
+          <h3 class="accent-amber">Delta Live Tables</h3>
+        </div>
+        <div class="pros-cons">
+          <h4 class="pro-label">Pros</h4>
+          <ul class="pro-list">
+            <li>Placeholder pro #1 - declarative like dbt but PySpark</li>
+            <li>Placeholder pro #2 - built-in data quality expectations</li>
+            <li>Placeholder pro #3 - only 7 notebooks vs 65+</li>
+          </ul>
+          <h4 class="con-label">Cons</h4>
+          <ul class="con-list">
+            <li>Placeholder con #1 - Databricks vendor lock-in</li>
+            <li>Placeholder con #2 - limited community ecosystem</li>
+            <li>Placeholder con #3 - newer, less battle-tested</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- dbt card -->
+      <div class="compare-card dbt-card">
+        <div class="card-header">
+          <svg viewBox="0 0 24 24" fill="none"><path fill="#ffffff" d="M15.613875 8.90125v6.124425h-1.241175v-0.624625c-0.1298 0.219025 -0.3163 0.3975 -0.543475 0.51105 -0.24335 0.121675 -0.519175 0.186575 -0.7949 0.186575 -0.340725 0.008125 -0.68145 -0.089225 -0.96535 -0.283925 -0.291975 -0.194675 -0.51915 -0.46235 -0.6652 -0.778725 -0.1622 -0.365025 -0.243325 -0.7544 -0.23525 -1.151875 -0.008075 -0.397475 0.07305 -0.78685 0.23525 -1.14375 0.14605 -0.308275 0.373225 -0.57595 0.657125 -0.762525 0.291975 -0.186575 0.6327 -0.2758 0.973425 -0.2677 0.26765 0 0.5353 0.0568 0.770575 0.178475 0.227175 0.11355 0.4137 0.2839 0.543475 0.494825v-2.068525l1.2655 -0.4137Zm-1.492575 4.915775c0.162175 -0.210925 0.2514 -0.519175 0.2514 -0.91665 0 -0.397475 -0.08105 -0.697625 -0.2514 -0.908525 -0.170375 -0.2109 -0.438125 -0.332575 -0.71385 -0.324475 -0.275825 -0.016225 -0.543475 0.10545 -0.722025 0.316375 -0.17025 0.2109 -0.259575 0.51105 -0.259575 0.9004 0 0.397475 0.089325 0.705725 0.259575 0.92475 0.170375 0.219025 0.4462 0.3407 0.722025 0.3326 0.308225 0 0.55155 -0.113575 0.71385 -0.324475Zm5.929775 -2.84725c0.291975 0.18655 0.51915 0.45425 0.657025 0.7625 0.162175 0.356925 0.243325 0.746275 0.23525 1.143775 0.008075 0.397475 -0.073075 0.79495 -0.23525 1.151875 -0.14605 0.31635 -0.373125 0.58405 -0.6652 0.778725 -0.2839 0.186575 -0.624625 0.283925 -0.96525 0.2758 -0.275825 0.008125 -0.551675 -0.056775 -0.795 -0.186575 -0.227075 -0.11355 -0.4137 -0.292025 -0.5354 -0.511025v0.6327h-1.24915V9.31495l1.257325 -0.4137v2.498425c0.1216 -0.219 0.308225 -0.397475 0.5353 -0.511025 0.243425 -0.1298 0.5111 -0.194675 0.786925 -0.186575 0.340625 -0.0081 0.68135 0.089225 0.973425 0.2677Zm-0.61655 2.839125c0.17035 -0.219025 0.2515 -0.527275 0.2515 -0.93285 0 -0.389375 -0.08115 -0.689525 -0.2515 -0.900425 -0.170375 -0.2109 -0.405625 -0.31635 -0.71385 -0.31635 -0.275725 -0.016225 -0.543475 0.10545 -0.721925 0.324475 -0.17035 0.219 -0.2515 0.51915 -0.2515 0.908525 0 0.397475 0.08115 0.705725 0.2515 0.916625 0.170375 0.219025 0.438025 0.3407 0.721925 0.324475 0.275825 0.016225 0.543475 -0.10545 0.71385 -0.324475Zm3.24475 -2.0604v1.638575c0 0.23525 0.0649 0.4056 0.178525 0.51105 0.1298 0.113575 0.300075 0.17035 0.4786 0.16225 0.137875 0 0.2839 -0.02435 0.4137 -0.0568v0.973425c-0.235275 0.081125 -0.4786 0.121675 -0.722025 0.113575 -0.519075 0 -0.9166 -0.146025 -1.19245 -0.43805 -0.275725 -0.292025 -0.413675 -0.705725 -0.413675 -1.2411V9.817875l1.257325 -0.405575v1.395225h1.070825v0.940975h-1.070825Z" stroke-width="0.25"/><path fill="#ff694a" d="M8.840425 7.8873c0.2109 0.2028 0.3488 0.4705 0.38125 0.762525 0 0.121675 -0.03245 0.2028 -0.10545 0.3569 -0.073 0.154125 -0.973425 1.7116 -1.2411 2.141525 -0.154125 0.251475 -0.23525 0.551625 -0.23525 0.843625 0 0.30015 0.081125 0.592175 0.23525 0.84365 0.267675 0.429925 1.1681 1.9955 1.2411 2.149625 0.073 0.154125 0.10545 0.227125 0.10545 0.3488 -0.03245 0.292025 -0.16225 0.559725 -0.37315 0.7544 -0.2028 0.2109 -0.470475 0.348825 -0.7544 0.37315 -0.121675 0 -0.2028 -0.03245 -0.3488 -0.10545 -0.146025 -0.073025 -1.735925 -0.9491 -2.16585 -1.216775 -0.03245 -0.016225 -0.0649 -0.040575 -0.10545 -0.0568l-2.1253 -1.257325c0.04865 0.4056 0.227125 0.794975 0.51915 1.078875 0.056775 0.056775 0.113575 0.10545 0.17845 0.154125 -0.048675 0.024325 -0.10545 0.048675 -0.154125 0.081125 -0.429925 0.267675 -1.9955 1.1681 -2.1496225 1.2411 -0.1541225 0.073 -0.2271325 0.10545 -0.3569225 0.10545 -0.292025 -0.03245 -0.559715 -0.162225 -0.7544 -0.373125 -0.2109075 -0.2028 -0.3488075 -0.4705 -0.381255 -0.762525 0.0081125 -0.121675 0.04056 -0.24335 0.105455 -0.3488 0.073005 -0.154125 0.9734175 -1.719725 1.2411025 -2.14965 0.154135 -0.25145 0.2352475 -0.543475 0.2352475 -0.843625 0 -0.300125 -0.0811125 -0.59215 -0.2352475 -0.843625 -0.267685 -0.44615 -1.17621 -2.011725 -1.2411025 -2.16585 -0.064895 -0.10545 -0.0973425 -0.227125 -0.105455 -0.3488 0.0324475 -0.292025 0.1622375 -0.559725 0.373145 -0.762525 0.202795 -0.2109 0.470485 -0.3407 0.76251 -0.37315 0.121675 0.008125 0.24335 0.040575 0.3569225 0.105475 0.12979 0.056775 1.2735475 0.72195 1.8819475 1.078875l0.1379 0.0811c0.04865 0.03245 0.089225 0.056775 0.121675 0.073025l0.0649 0.04055 2.16585 1.281675c-0.048675 -0.486725 -0.30015 -0.932875 -0.6895 -1.233 0.048675 -0.02435 0.10545 -0.048675 0.154125 -0.081125 0.429925 -0.2677 1.9955 -1.176225 2.149625 -1.2411 0.10545 -0.0649 0.227125 -0.09735 0.356925 -0.105475 0.2839 0.03245 0.5516 0.16225 0.7544 0.37315ZM4.8494 12.57595l0.462375 -0.4624c0.0649 -0.064875 0.0649 -0.162225 0 -0.227125l-0.462375 -0.462375c-0.0649 -0.0649 -0.162225 -0.0649 -0.227125 0l-0.462375 0.462375c-0.0649 0.0649 -0.0649 0.16225 0 0.227125l0.462375 0.4624c0.056775 0.056775 0.162225 0.056775 0.227125 0Z" stroke-width="0.25"/></svg>
+          <h3 class="accent-teal">dbt</h3>
+        </div>
+        <div class="pros-cons">
+          <h4 class="pro-label">Pros</h4>
+          <ul class="pro-list">
+            <li>Placeholder pro #1 - platform agnostic</li>
+            <li>Placeholder pro #2 - massive community and packages</li>
+            <li>Placeholder pro #3 - mature testing and docs</li>
+          </ul>
+          <h4 class="con-label">Cons</h4>
+          <ul class="con-list">
+            <li>Placeholder con #1 - no built-in streaming support</li>
+            <li>Placeholder con #2 - requires warehouse compute</li>
+            <li>Placeholder con #3 - steeper initial setup</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== CODE COMPARE: DLT vs dbt ==================== -->
+  <section class="slide" role="group" aria-label="DLT Code Compare">
+    <div class="code-comparison">
+      <div class="code-comparison-header">
+        <h2>The Code: <span class="accent-amber">DLT</span> vs <span class="accent-teal">dbt</span></h2>
+        <p>Building <code>stg_orders</code> &mdash; closest comparison, but key differences</p>
+      </div>
+
+      <!-- Native: Delta Live Tables -->
+      <div class="code-panel native-panel">
+        <div class="code-panel-header">
+          <h3 class="accent-amber">Delta Live Tables</h3>
+        </div>
+        <div class="code-block">
+<pre><span class="cm"># dlt/silver/staging.py</span>
+<span class="kw">import</span> dlt
+<span class="kw">from</span> pyspark.sql.functions <span class="kw">import</span> (
+    col, trim, to_date, coalesce, lit
+)
+<span class="kw">from</span> pyspark.sql.types <span class="kw">import</span> DoubleType
+
+<span class="dec">@dlt.table</span>(
+    name=<span class="str">"stg_orders"</span>,
+    comment=<span class="str">"Cleaned and typed order data"</span>,
+    table_properties={<span class="str">"quality"</span>: <span class="str">"silver"</span>}
+)
+<span class="dec">@dlt.expect_or_drop</span>(
+    <span class="str">"valid_order_id"</span>,
+    <span class="str">"order_id IS NOT NULL"</span>
+)
+<span class="dec">@dlt.expect</span>(
+    <span class="str">"valid_total"</span>, <span class="str">"total_amount &gt;= 0"</span>
+)
+<span class="kw">def</span> <span class="fn">stg_orders</span>():
+    <span class="kw">return</span> (
+        dlt.read(<span class="str">"bronze_orders"</span>)
+        .select(
+            col(<span class="str">"order_id"</span>),
+            trim(col(<span class="str">"customer_id"</span>))
+                .alias(<span class="str">"customer_id"</span>),
+            to_date(col(<span class="str">"order_date"</span>))
+                .alias(<span class="str">"order_date"</span>),
+            col(<span class="str">"subtotal"</span>)
+                .cast(DoubleType())
+                .alias(<span class="str">"subtotal"</span>),
+            <span class="cm"># ... more columns ...</span>
+        )
+    )</pre>
+        </div>
+        <div class="code-metric amber">
+          <span class="metric-number">Python</span>
+          <span class="metric-label">required &mdash; PySpark API, decorators, Databricks-only</span>
+        </div>
+      </div>
+
+      <!-- dbt -->
+      <div class="code-panel dbt-panel">
+        <div class="code-panel-header">
+          <h3 class="accent-teal">dbt Model + YAML</h3>
+        </div>
+        <div class="code-block">
+<pre><span class="cm">-- models/staging/stg_orders.sql</span>
+<span class="kw">with</span> source <span class="kw">as</span> (
+    <span class="kw">select</span> * <span class="kw">from</span> {{ <span class="fn">source</span>(<span class="str">'raw'</span>, <span class="str">'orders'</span>) }}
+),
+staged <span class="kw">as</span> (
+    <span class="kw">select</span>
+        order_id,
+        <span class="fn">trim</span>(customer_id) <span class="kw">as</span> customer_id,
+        <span class="fn">try_to_date</span>(order_date) <span class="kw">as</span> order_date,
+        <span class="fn">coalesce</span>(<span class="fn">try_to_number</span>(subtotal,
+          <span class="num">10</span>, <span class="num">2</span>), <span class="num">0</span>) <span class="kw">as</span> subtotal,
+        <span class="cm">/* ... more columns ... */</span>
+    <span class="kw">from</span> source
+    <span class="kw">where</span> order_id <span class="kw">is not null</span>
+)
+<span class="kw">select</span> * <span class="kw">from</span> staged
+
+<span class="cm">-- schema.yml  (tests &amp; docs as config)</span>
+<span class="cm">-- models:</span>
+<span class="cm">--   - name: stg_orders</span>
+<span class="cm">--     description: Cleaned order data</span>
+<span class="cm">--     columns:</span>
+<span class="cm">--       - name: order_id</span>
+<span class="cm">--         tests: [not_null, unique]</span>
+<span class="cm">--       - name: total_amount</span>
+<span class="cm">--         tests: [not_null]</span></pre>
+        </div>
+        <div class="code-metric teal">
+          <span class="metric-number">SQL</span>
+          <span class="metric-label">only &mdash; tests in YAML, runs on Snowflake, Databricks, BigQuery, etc.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== SLIDE 5 : Summary ==================== -->
+  <section class="slide" role="group" aria-label="Summary">
+    <div class="summary-wrap">
+      <h2>Side-by-Side <span class="accent-amber">Comparison</span></h2>
+
+      <div class="summary-grid">
+        <!-- Header row -->
+        <div class="cell header row-label">Aspect</div>
+        <div class="cell header">Snowflake SP</div>
+        <div class="cell header">Notebooks</div>
+        <div class="cell header">DLT</div>
+        <div class="cell header">dbt</div>
+
+        <!-- Row: Language -->
+        <div class="cell row-label">Language</div>
+        <div class="cell">SQL + JS</div>
+        <div class="cell">PySpark</div>
+        <div class="cell">PySpark</div>
+        <div class="cell">SQL (Jinja)</div>
+
+        <!-- Row: Orchestration -->
+        <div class="cell row-label">Orchestration</div>
+        <div class="cell">Stored Procs</div>
+        <div class="cell">Manual Scripts</div>
+        <div class="cell">Automatic</div>
+        <div class="cell">dbt CLI</div>
+
+        <!-- Row: Data Quality -->
+        <div class="cell row-label">Data Quality</div>
+        <div class="cell">Custom Framework</div>
+        <div class="cell">Test Notebooks</div>
+        <div class="cell">@dlt.expect</div>
+        <div class="cell">dbt tests</div>
+
+        <!-- Row: Files -->
+        <div class="cell row-label">Files / Notebooks</div>
+        <div class="cell">~30 scripts</div>
+        <div class="cell">65+ notebooks</div>
+        <div class="cell">7 notebooks</div>
+        <div class="cell">~25 models</div>
+
+        <!-- Row: Best For -->
+        <div class="cell row-label">Best For</div>
+        <div class="cell">SQL-centric teams</div>
+        <div class="cell">Custom Spark logic</div>
+        <div class="cell">Managed pipelines</div>
+        <div class="cell">Analytics engineers</div>
+      </div>
+
+      <p class="summary-tagline">"Choose the tool that fits your team -- not the one that sounds the fanciest."</p>
+    </div>
+  </section>
+
+</div><!-- /slide-track -->
+
+<!-- Side navigation arrows -->
+<button id="nav-prev" class="nav-arrow nav-arrow-left" aria-label="Previous slide">
+  <svg viewBox="0 0 20 20" fill="none"><path d="M13 4l-6 6 6 6" stroke="var(--text)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+</button>
+<button id="nav-next" class="nav-arrow nav-arrow-right" aria-label="Next slide">
+  <svg viewBox="0 0 20 20" fill="none"><path d="M7 4l6 6-6 6" stroke="var(--text)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+</button>
+
+<!-- Dot navigation -->
+<nav id="dots" aria-label="Slide navigation"></nav>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ── Configuration ── */
+  const SLIDE_INTERVAL = 20000; // 20 seconds
+  const TOTAL_SLIDES = document.querySelectorAll('.slide').length;
+  const SLIDE_TITLES = ['Landing', 'Snowflake SP vs dbt', 'SP: Code Compare', 'Notebooks vs dbt', 'Notebooks: Code Compare', 'DLT vs dbt', 'DLT: Code Compare', 'Summary'];
+
+  /* ── State ── */
+  let currentIndex = 0;
+  let isPlaying = true;
+  let animFrameId = null;
+  let startTime = null;
+  let touchStartX = 0;
+
+  /* ── DOM refs ── */
+  const track = document.getElementById('slide-track');
+  const progressBar = document.getElementById('progress-bar');
+  const resumeBtn = document.getElementById('resume-btn');
+  const pauseBadge = document.getElementById('pause-badge');
+  const dotsNav = document.getElementById('dots');
+  const breadcrumbNav = document.getElementById('breadcrumb');
+
+  /* ── Build dot indicators ── */
+  for (let i = 0; i < TOTAL_SLIDES; i++) {
+    const dot = document.createElement('button');
+    dot.className = 'dot' + (i === 0 ? ' active' : '');
+    dot.setAttribute('aria-label', 'Go to slide ' + (i + 1));
+    dot.addEventListener('click', function () {
+      goToSlide(i);
+      pause();
+    });
+    dotsNav.appendChild(dot);
+  }
+  const dots = dotsNav.querySelectorAll('.dot');
+
+  /* ── Build breadcrumb items ── */
+  for (let i = 0; i < TOTAL_SLIDES; i++) {
+    if (i > 0) {
+      const sep = document.createElement('span');
+      sep.className = 'crumb-sep';
+      sep.setAttribute('aria-hidden', 'true');
+      sep.textContent = '\u203A'; // single right-pointing angle quotation mark
+      breadcrumbNav.appendChild(sep);
+    }
+    const crumb = document.createElement('button');
+    crumb.className = 'crumb' + (i === 0 ? ' active' : '');
+    crumb.textContent = SLIDE_TITLES[i];
+    crumb.setAttribute('aria-label', 'Go to slide: ' + SLIDE_TITLES[i]);
+    crumb.addEventListener('click', function () {
+      goToSlide(i);
+      pause();
+    });
+    breadcrumbNav.appendChild(crumb);
+  }
+  const crumbs = breadcrumbNav.querySelectorAll('.crumb');
+
+  /* ── Navigation ── */
+  function goToSlide(index) {
+    if (index < 0) index = TOTAL_SLIDES - 1;
+    if (index >= TOTAL_SLIDES) index = 0;
+    currentIndex = index;
+    track.style.transform = 'translateX(' + (-100 * currentIndex) + 'vw)';
+    dots.forEach(function (d, i) {
+      d.classList.toggle('active', i === currentIndex);
+    });
+    crumbs.forEach(function (c, i) {
+      c.classList.toggle('active', i === currentIndex);
+    });
+    resetProgress();
+  }
+
+  function next() { goToSlide(currentIndex + 1); }
+  function prev() { goToSlide(currentIndex - 1); }
+
+  /* ── Progress bar animation ── */
+  function resetProgress() {
+    startTime = performance.now();
+    progressBar.style.width = '0%';
+  }
+
+  function tickProgress(now) {
+    if (!isPlaying) return;
+    if (!startTime) startTime = now;
+    var elapsed = now - startTime;
+    var pct = Math.min((elapsed / SLIDE_INTERVAL) * 100, 100);
+    progressBar.style.width = pct + '%';
+
+    if (elapsed >= SLIDE_INTERVAL) {
+      next();
+    } else {
+      animFrameId = requestAnimationFrame(tickProgress);
+    }
+  }
+
+  function startProgress() {
+    resetProgress();
+    animFrameId = requestAnimationFrame(tickProgress);
+  }
+
+  /* ── Play / Pause ── */
+  function pause() {
+    if (!isPlaying) return;
+    isPlaying = false;
+    if (animFrameId) cancelAnimationFrame(animFrameId);
+    resumeBtn.classList.add('visible');
+    pauseBadge.classList.add('visible');
+  }
+
+  function play() {
+    if (isPlaying) return;
+    isPlaying = true;
+    resumeBtn.classList.remove('visible');
+    pauseBadge.classList.remove('visible');
+    startProgress();
+  }
+
+  function togglePlayPause() {
+    isPlaying ? pause() : play();
+  }
+
+  /* ── Event listeners ── */
+
+  // Keyboard
+  document.addEventListener('keydown', function (e) {
+    switch (e.key) {
+      case 'ArrowRight': case 'l': case 'ArrowDown': case 'j':
+        e.preventDefault();
+        next();
+        pause();
+        break;
+      case 'ArrowLeft': case 'h': case 'ArrowUp': case 'k':
+        e.preventDefault();
+        prev();
+        pause();
+        break;
+      case ' ':
+        e.preventDefault();
+        togglePlayPause();
+        break;
+    }
+  });
+
+  // Resume button
+  resumeBtn.addEventListener('click', function () {
+    play();
+  });
+
+  // Side navigation arrows
+  document.getElementById('nav-prev').addEventListener('click', function (e) {
+    e.stopPropagation();
+    prev();
+    pause();
+  });
+  document.getElementById('nav-next').addEventListener('click', function (e) {
+    e.stopPropagation();
+    next();
+    pause();
+  });
+
+  // Touch / swipe
+  document.addEventListener('touchstart', function (e) {
+    touchStartX = e.changedTouches[0].clientX;
+  }, { passive: true });
+
+  document.addEventListener('touchend', function (e) {
+    var dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 50) {
+      dx < 0 ? next() : prev();
+      pause();
+    }
+  }, { passive: true });
+
+  // Click on dots is handled above; click on edges
+  document.addEventListener('click', function (e) {
+    // Ignore if clicking a button or link
+    if (e.target.closest('button, a, nav')) return;
+    var x = e.clientX;
+    var w = window.innerWidth;
+    if (x < w * 0.12) { prev(); pause(); }
+    else if (x > w * 0.88) { next(); pause(); }
+  });
+
+  /* ── Start ── */
+  goToSlide(0);
+  startProgress();
+})();
+</script>
+</body>
+</html>
