@@ -4,7 +4,19 @@ models:
   # Sales Reports
   - name: rpt_daily_sales_summary
     description: Daily sales metrics by location with day-over-day and week-over-week comparisons
-    
+    columns:
+      - name: order_date
+        tests:
+          - not_null
+      - name: total_orders
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+      - name: total_revenue
+        tests:
+          - not_null
+
   - name: rpt_weekly_sales_summary
     description: Weekly aggregated sales by location
     
@@ -14,7 +26,14 @@ models:
   # Customer Reports
   - name: rpt_customer_overview
     description: Customer overview with lifetime metrics, RFM scores, and favorites
-    
+    columns:
+      - name: customer_name
+        tests:
+          - not_null
+      - name: total_spend
+        tests:
+          - not_null
+
   - name: rpt_rfm_segment_summary
     description: RFM segment analysis showing customer counts and revenue by segment
     
@@ -33,7 +52,16 @@ models:
   # Menu Item Reports
   - name: rpt_top_selling_items
     description: Menu items ranked by revenue with Pareto analysis
-    
+    columns:
+      - name: item_name
+        tests:
+          - not_null
+      - name: total_revenue
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+
   - name: rpt_top_items_by_category
     description: Top 5 items within each menu category
     
@@ -49,7 +77,15 @@ models:
   # Location Reports
   - name: rpt_location_performance
     description: Comprehensive location performance metrics
-    
+    columns:
+      - name: location_name
+        tests:
+          - not_null
+          - unique
+      - name: total_revenue
+        tests:
+          - not_null
+
   - name: rpt_location_ranking
     description: Locations ranked by revenue, orders, and other metrics
     
@@ -68,7 +104,13 @@ models:
   # Inventory Reports
   - name: rpt_inventory_status
     description: Current inventory status by location and ingredient
-    
+    columns:
+      - name: quantity_on_hand
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+
   - name: rpt_inventory_alerts
     description: Low stock and expiring inventory alerts
     

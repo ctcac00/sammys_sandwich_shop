@@ -125,7 +125,16 @@ See [databricks/dlt/README.md](databricks/dlt/README.md) for setup and documenta
 | Orchestration | Stored procs | dbt CLI | Manual scripts | Automatic |
 | Data Quality | Custom framework | dbt tests | Test notebooks | `@dlt.expect` |
 | Execution | Snowflake engine | Snowflake engine | Spark cluster | Spark cluster |
+| SCD Strategy | Type 2 ready (surrogate keys via AUTOINCREMENT) | Type 1 (hash-based surrogate keys) | Type 1 (hash-based surrogate keys) | Type 1 (hash-based surrogate keys) |
 | Best For | SQL-centric teams | Analytics engineers | Custom Spark logic | Managed pipelines |
+
+### Cross-Platform Design Notes
+
+All platforms produce the **same** dimensional model (dimensions, facts, and reports) from the same source data. There are intentional per-platform differences:
+
+- **Surrogate keys**: Snowflake uses `AUTOINCREMENT` integers with SCD Type 2 columns (`expiration_date`), making it ready for historical tracking. The other platforms use deterministic `md5()` hashes with SCD Type 1 (current state only).
+- **Dimension columns**: The Databricks DLT implementation exposes additional enriched columns on some entity dimensions (e.g., `dim_location` includes `city_state`, `district`; `dim_employee` includes `tenure_group`, `tenure_years`) that go beyond the dbt/Snowflake schemas. This reflects DLT's design as a self-contained analytical pipeline. The core join keys and business keys remain identical.
+- **Raw layer metadata**: The Snowflake raw tables include `_loaded_at` and `_source_file` audit columns added on ingestion. The Databricks bronze layers do not include these columns since data is loaded directly from CSV files.
 
 ## Data Model
 

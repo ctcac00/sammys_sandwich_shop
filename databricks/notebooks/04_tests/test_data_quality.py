@@ -164,6 +164,11 @@ dim_tests = [
     ("dim_employee", "employee_sk"),
     ("dim_location", "location_sk"),
     ("dim_menu_item", "menu_item_sk"),
+    ("dim_ingredient", "ingredient_sk"),
+    ("dim_date", "date_key"),
+    ("dim_time", "time_key"),
+    ("dim_payment_method", "payment_method_sk"),
+    ("dim_order_type", "order_type_sk"),
 ]
 
 for table, column in dim_tests:

@@ -131,21 +131,21 @@ def dim_time():
 )
 def dim_payment_method():
     payment_methods = [
-        ("Cash", "Cash", True),
-        ("Credit Card", "Card", False),
-        ("Debit Card", "Card", False),
-        ("Gift Card", "Other", False),
-        ("Mobile Payment", "Digital", False),
-        ("Unknown", "Unknown", False),
+        ("Credit Card", "Card", True, 0.0295),
+        ("Debit Card", "Card", True, 0.0150),
+        ("Cash", "Cash", False, 0.0000),
+        ("Mobile Pay", "Digital", True, 0.0250),
+        ("Gift Card", "Prepaid", False, 0.0000),
     ]
     
     return (
-        spark.createDataFrame(payment_methods, ["payment_method", "payment_category", "is_cash"])
+        spark.createDataFrame(payment_methods, ["payment_method", "payment_type", "is_digital", "processing_fee_pct"])
         .select(
             md5(col("payment_method")).alias("payment_method_sk"),
             col("payment_method"),
-            col("payment_category"),
-            col("is_cash")
+            col("payment_type"),
+            col("is_digital"),
+            col("processing_fee_pct")
         )
     )
 
@@ -163,21 +163,20 @@ def dim_payment_method():
 )
 def dim_order_type():
     order_types = [
-        ("Dine-In", True, False),
-        ("Takeout", False, False),
-        ("Drive-Thru", False, True),
-        ("Delivery", False, False),
-        ("Catering", False, False),
-        ("Unknown", False, False),
+        ("Dine-In", True, 5),
+        ("Takeout", True, 3),
+        ("Drive-Thru", False, 4),
+        ("Delivery", False, 30),
+        ("Catering", False, 60),
     ]
     
     return (
-        spark.createDataFrame(order_types, ["order_type", "is_dine_in", "is_drive_thru"])
+        spark.createDataFrame(order_types, ["order_type", "is_in_store", "avg_service_minutes"])
         .select(
             md5(col("order_type")).alias("order_type_sk"),
             col("order_type"),
-            col("is_dine_in"),
-            col("is_drive_thru")
+            col("is_in_store"),
+            col("avg_service_minutes")
         )
     )
 
