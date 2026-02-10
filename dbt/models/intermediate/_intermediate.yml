@@ -3,30 +3,126 @@ version: 2
 models:
   - name: int_locations
     description: Enriched location data with derived fields like years in operation
+    columns:
+      - name: location_id
+        tests:
+          - unique
+          - not_null
+      - name: location_name
+        tests:
+          - not_null
+      - name: years_in_operation
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 100
 
   - name: int_customers
     description: Enriched customer data with derived fields like age, tenure, and loyalty tier rank
+    columns:
+      - name: customer_id
+        tests:
+          - unique
+          - not_null
+      - name: full_name
+        tests:
+          - not_null
+      - name: loyalty_tier_rank
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 1
+              max_value: 5
 
   - name: int_employees
     description: Enriched employee data with derived fields like tenure and manager flag
+    columns:
+      - name: employee_id
+        tests:
+          - unique
+          - not_null
+      - name: full_name
+        tests:
+          - not_null
+      - name: tenure_days
+        tests:
+          - not_null
 
   - name: int_menu_items
     description: Enriched menu item data with derived fields like price tier and calorie category
+    columns:
+      - name: item_id
+        tests:
+          - unique
+          - not_null
+      - name: item_name
+        tests:
+          - not_null
+      - name: price_tier
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Budget', 'Standard', 'Premium', 'Gourmet']
+      - name: calorie_category
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Light', 'Moderate', 'Hearty', 'Indulgent']
 
   - name: int_ingredients
     description: Enriched ingredient data with derived fields like cost tier
+    columns:
+      - name: ingredient_id
+        tests:
+          - unique
+          - not_null
 
   - name: int_menu_item_ingredients
     description: Enriched recipe/BOM data with calculated ingredient costs
+    tests:
+      - unique:
+          column_name: "(item_id || '-' || ingredient_id)"
 
   - name: int_suppliers
     description: Enriched supplier data with payment days extracted from terms
+    columns:
+      - name: supplier_id
+        tests:
+          - unique
+          - not_null
 
   - name: int_orders
     description: Enriched order data with derived fields like time period, day of week, and flags
+    columns:
+      - name: order_id
+        tests:
+          - unique
+          - not_null
+      - name: order_date
+        tests:
+          - not_null
+      - name: order_period
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Breakfast', 'Lunch', 'Afternoon', 'Dinner', 'Late Night']
+      - name: item_count
+        tests:
+          - not_null
 
   - name: int_order_items
     description: Enriched order line item data with customization flag
+    columns:
+      - name: order_item_id
+        tests:
+          - unique
+          - not_null
 
   - name: int_inventory
     description: Enriched inventory data with derived fields like quantity available and stock status
+    columns:
+      - name: inventory_id
+        tests:
+          - unique
+          - not_null
