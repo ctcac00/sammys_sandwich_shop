@@ -1,767 +1,1350 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Building Data Pipelines: Native vs dbt</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-/* ── Reset ── */
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
-:root {
-  --bg: #111113;
-  --bg-card: #1a1a1f;
-  --text: #e8e4df;
-  --text-dim: #8a8680;
-  --amber: #d4a24e;
-  --amber-glow: rgba(212, 162, 78, .15);
-  --teal: #4ecdc4;
-  --teal-glow: rgba(78, 205, 196, .12);
-  --font-heading: 'Space Grotesk', sans-serif;
-  --font-body: 'IBM Plex Sans', sans-serif;
-  --slide-transition: .6s cubic-bezier(.4, 0, .2, 1);
-}
-
-html, body {
-  height: 100%;
-  overflow: hidden;
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font-body);
-  font-weight: 400;
-  -webkit-font-smoothing: antialiased;
-}
-
-/* Subtle grain texture overlay */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  opacity: .035;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-size: 200px;
-}
-
-/* ── Progress Bar ── */
-#progress-bar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  height: 3px;
-  width: 0%;
-  background: linear-gradient(90deg, var(--amber), var(--teal));
-  z-index: 1000;
-  transition: none;
-}
-
-/* ── Slide Track ── */
-#slide-track {
-  display: flex;
-  height: 100vh;
-  transition: transform var(--slide-transition);
-  position: relative;
-  z-index: 1;
-}
-
-.slide {
-  min-width: 100vw;
-  height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 80px 8vw;
-  position: relative;
-}
-
-/* ── Shared Typography ── */
-h1, h2, h3 { font-family: var(--font-heading); font-weight: 600; line-height: 1.15; }
-h1 { font-size: clamp(2.2rem, 5vw, 4.2rem); letter-spacing: -.02em; }
-h2 { font-size: clamp(1.6rem, 3.2vw, 2.6rem); letter-spacing: -.015em; }
-h3 { font-size: clamp(1.1rem, 1.8vw, 1.4rem); }
-p, li { font-size: clamp(.95rem, 1.3vw, 1.15rem); line-height: 1.65; color: var(--text-dim); }
-li { margin-bottom: .45em; }
-
-.accent-amber { color: var(--amber); }
-.accent-teal  { color: var(--teal); }
-
-/* ── Slide 1 : Hero / Landing ── */
-.hero-content {
-  text-align: center;
-  max-width: 900px;
-}
-
-.hero-content h1 {
-  margin-bottom: .4em;
-}
-
-.hero-content h1 .highlight {
-  background: linear-gradient(135deg, var(--amber), var(--teal));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.hero-subtitle {
-  font-size: clamp(1rem, 1.6vw, 1.3rem);
-  color: var(--text-dim);
-  font-weight: 300;
-  margin-bottom: 3rem;
-  font-style: italic;
-}
-
-/* Animated pipeline diagram */
-.pipeline-diagram {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0;
-  margin: 2.5rem auto 2rem;
-  max-width: 720px;
-  position: relative;
-}
-
-.pipeline-node {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: .6rem;
-  flex: 0 0 auto;
-  opacity: 0;
-  animation: fadeInUp .7s ease forwards;
-}
-
-.pipeline-node:nth-child(1) { animation-delay: .3s; }
-.pipeline-node:nth-child(3) { animation-delay: .55s; }
-.pipeline-node:nth-child(5) { animation-delay: .8s; }
-
-.pipeline-arrow {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 50px;
-  opacity: 0;
-  animation: fadeIn .5s ease forwards;
-}
-.pipeline-arrow:nth-child(2) { animation-delay: .45s; }
-.pipeline-arrow:nth-child(4) { animation-delay: .7s; }
-
-.pipeline-arrow svg {
-  width: 48px;
-  height: 24px;
-}
-
-.node-icon {
-  width: 72px;
-  height: 72px;
-  border-radius: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1.5px solid rgba(255,255,255,.08);
-}
-
-.node-icon.snowflake-bg { background: #1a2a3a; }
-.node-icon.databricks-bg { background: #2a1a1a; }
-.node-icon.dbt-bg { background: #1a2a20; }
-
-.node-icon svg, .node-icon img { width: 38px; height: 38px; }
-
-.node-label {
-  font-family: var(--font-heading);
-  font-size: .82rem;
-  font-weight: 500;
-  color: var(--text-dim);
-  letter-spacing: .03em;
-}
-
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(18px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
-/* Side navigation arrows */
-.nav-arrow {
-  position: fixed;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 150;
-  background: rgba(255, 255, 255, .04);
-  border: 1px solid rgba(255, 255, 255, .06);
-  border-radius: 50%;
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  padding: 0;
-  opacity: .35;
-  transition: opacity .3s ease, background .3s ease, transform .3s ease;
-}
-.nav-arrow:hover {
-  opacity: .9;
-  background: var(--amber-glow);
-  transform: translateY(-50%) scale(1.1);
-}
-.nav-arrow:active {
-  transform: translateY(-50%) scale(.95);
-}
-.nav-arrow:focus-visible {
-  outline: 2px solid var(--teal);
-  outline-offset: 3px;
-}
-.nav-arrow svg { width: 20px; height: 20px; }
-.nav-arrow-left  { left: 18px; }
-.nav-arrow-right { right: 18px; }
-
-/* ── Slides 2-4 : Comparison Layout ── */
-.comparison {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 3rem;
-  width: 100%;
-  max-width: 1100px;
-}
-
-.comparison-header {
-  grid-column: 1 / -1;
-  text-align: center;
-  margin-bottom: .5rem;
-}
-
-.comparison-header h2 span {
-  color: var(--text-dim);
-  font-weight: 400;
-}
-
-.compare-card {
-  background: var(--bg-card);
-  border: 1px solid rgba(255,255,255,.06);
-  border-radius: 14px;
-  padding: 2rem 2.2rem;
-}
-
-.compare-card.native-card { border-top: 2.5px solid var(--amber); }
-.compare-card.dbt-card    { border-top: 2.5px solid var(--teal); }
-
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: .75rem;
-  margin-bottom: 1.4rem;
-}
-
-.card-header svg, .card-header img { width: 30px; height: 30px; flex-shrink: 0; }
-.card-header h3 { white-space: nowrap; }
-
-.pros-cons h4 {
-  font-family: var(--font-heading);
-  font-size: .85rem;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  margin-bottom: .6rem;
-  margin-top: 1rem;
-}
-.pros-cons h4.pro-label  { color: var(--teal); }
-.pros-cons h4.con-label  { color: #c45b5b; }
-
-.pros-cons ul {
-  list-style: none;
-  padding-left: 0;
-}
-
-.pros-cons li {
-  padding-left: 1.2em;
-  position: relative;
-}
-
-.pros-cons li::before {
-  position: absolute;
-  left: 0;
-  font-weight: 600;
-}
-
-.pros-cons .pro-list li::before { content: '+'; color: var(--teal); }
-.pros-cons .con-list li::before { content: '\2013'; color: #c45b5b; }
-
-/* ── Code Comparison Slides ── */
-.code-comparison {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
-  width: 100%;
-  max-width: 1200px;
-}
-
-.code-comparison-header {
-  grid-column: 1 / -1;
-  text-align: center;
-  margin-bottom: .5rem;
-}
-
-.code-comparison-header p {
-  margin-top: .5rem;
-  font-style: italic;
-}
-
-.code-comparison-header code {
-  background: rgba(255,255,255,.08);
-  padding: .15em .45em;
-  border-radius: 4px;
-  font-size: .95em;
-  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
-}
-
-.code-panel {
-  background: var(--bg-card);
-  border: 1px solid rgba(255,255,255,.06);
-  border-radius: 14px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.code-panel.native-panel { border-top: 2.5px solid var(--amber); }
-.code-panel.dbt-panel    { border-top: 2.5px solid var(--teal); }
-
-.code-panel-header {
-  display: flex;
-  align-items: center;
-  gap: .6rem;
-  padding: .7rem 1.2rem;
-  border-bottom: 1px solid rgba(255,255,255,.06);
-  background: rgba(255,255,255,.02);
-}
-
-.code-panel-header h3 {
-  font-size: clamp(.85rem, 1.1vw, 1.05rem);
-}
-
-.code-block {
-  padding: .8rem 1rem;
-  overflow-x: auto;
-  flex: 1;
-}
-
-.code-block pre {
-  margin: 0;
-  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Courier New', monospace;
-  font-size: clamp(.62rem, .75vw, .78rem);
-  line-height: 1.5;
-  color: #a9b7c6;
-  white-space: pre;
-  tab-size: 2;
-}
-
-.code-block .kw  { color: #c792ea; }
-.code-block .fn  { color: #82aaff; }
-.code-block .str { color: #c3e88d; }
-.code-block .cm  { color: #546e7a; font-style: italic; }
-.code-block .num { color: #f78c6c; }
-.code-block .ty  { color: #ffcb6b; }
-.code-block .dec { color: #82aaff; }
-
-.code-metric {
-  display: flex;
-  align-items: center;
-  gap: .6rem;
-  padding: .65rem 1.2rem;
-  border-top: 1px solid rgba(255,255,255,.06);
-  background: rgba(255,255,255,.02);
-}
-
-.code-metric .metric-number {
-  font-family: var(--font-heading);
-  font-weight: 700;
-  font-size: 1.2rem;
-  flex-shrink: 0;
-}
-
-.code-metric .metric-label {
-  font-size: .78rem;
-  color: var(--text-dim);
-}
-
-.code-metric.amber .metric-number { color: var(--amber); }
-.code-metric.teal  .metric-number { color: var(--teal); }
-
-/* ── Slide 5 : Summary Grid ── */
-.summary-wrap {
-  text-align: center;
-  width: 100%;
-  max-width: 1100px;
-}
-
-.summary-wrap h2 { margin-bottom: 2rem; }
-
-.summary-grid {
-  display: grid;
-  grid-template-columns: 1.4fr repeat(4, 1fr);
-  gap: 0;
-  text-align: left;
-  border-radius: 12px;
-  overflow: hidden;
-  border: 1px solid rgba(255,255,255,.06);
-}
-
-.summary-grid .cell {
-  padding: .85rem 1rem;
-  background: var(--bg-card);
-  border-bottom: 1px solid rgba(255,255,255,.04);
-  font-size: clamp(.8rem, 1vw, .95rem);
-}
-
-.summary-grid .cell.header {
-  font-family: var(--font-heading);
-  font-weight: 600;
-  font-size: clamp(.78rem, .95vw, .92rem);
-  background: #1e1e24;
-  color: var(--text);
-  text-transform: uppercase;
-  letter-spacing: .06em;
-  border-bottom: 2px solid rgba(255,255,255,.06);
-}
-
-.summary-grid .cell.row-label {
-  font-weight: 500;
-  color: var(--text);
-}
-
-.summary-tagline {
-  margin-top: 2.5rem;
-  font-size: clamp(1rem, 1.5vw, 1.25rem);
-  font-style: italic;
-  color: var(--text-dim);
-}
-
-/* ── Breadcrumb Navigation ── */
-#breadcrumb {
-  position: fixed;
-  top: 3px;
-  left: 0;
-  width: 100%;
-  z-index: 999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0;
-  padding: .55rem 1.5rem;
-  background: rgba(17, 17, 19, .85);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  font-family: var(--font-heading);
-  font-size: .78rem;
-  letter-spacing: .02em;
-}
-
-.crumb {
-  background: none;
-  border: none;
-  padding: .3rem .6rem;
-  color: var(--text-dim);
-  opacity: .5;
-  font-family: var(--font-heading);
-  font-size: .78rem;
-  font-weight: 500;
-  letter-spacing: .02em;
-  cursor: pointer;
-  position: relative;
-  transition: color .25s ease, opacity .25s ease, transform .25s ease;
-  white-space: nowrap;
-}
-
-.crumb::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  width: 0;
-  height: 1.5px;
-  background: var(--amber);
-  transition: width .3s ease, left .3s ease;
-}
-
-.crumb:hover {
-  color: var(--text);
-  opacity: .85;
-  transform: scale(1.05);
-}
-
-.crumb:hover::after {
-  width: 70%;
-  left: 15%;
-}
-
-.crumb:active {
-  background: var(--amber-glow);
-  border-radius: 6px;
-  transition: background .1s ease;
-}
-
-.crumb.active {
-  color: var(--amber);
-  opacity: 1;
-}
-
-.crumb.active::after {
-  width: 70%;
-  left: 15%;
-}
-
-.crumb:focus-visible {
-  outline: 2px solid var(--teal);
-  outline-offset: 2px;
-  border-radius: 4px;
-}
-
-.crumb-sep {
-  color: var(--text-dim);
-  opacity: .2;
-  font-size: .65rem;
-  margin: 0 .15rem;
-  pointer-events: none;
-  user-select: none;
-}
-
-/* ── Dots Navigation ── */
-#dots {
-  position: fixed;
-  bottom: 30px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 10px;
-  z-index: 100;
-}
-
-.dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: rgba(255,255,255,.15);
-  cursor: pointer;
-  transition: background .3s, transform .3s;
-  border: none;
-  padding: 0;
-}
-.dot:hover { background: rgba(255,255,255,.35); }
-.dot.active { background: var(--amber); transform: scale(1.25); }
-
-/* ── Resume Button ── */
-#resume-btn {
-  position: fixed;
-  bottom: 30px;
-  right: 36px;
-  z-index: 200;
-  background: var(--amber);
-  color: var(--bg);
-  font-family: var(--font-heading);
-  font-weight: 600;
-  font-size: .88rem;
-  letter-spacing: .04em;
-  padding: .6rem 1.5rem;
-  border: none;
-  border-radius: 50px;
-  cursor: pointer;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity .35s, transform .25s;
-  box-shadow: 0 4px 20px rgba(212, 162, 78, .3);
-}
-#resume-btn:hover { transform: scale(1.05); }
-#resume-btn:focus-visible { outline: 2px solid var(--teal); outline-offset: 3px; }
-#resume-btn.visible { opacity: 1; pointer-events: auto; }
-
-/* Pause indicator */
-#pause-badge {
-  position: fixed;
-  top: 52px;
-  right: 24px;
-  z-index: 200;
-  font-family: var(--font-heading);
-  font-size: .72rem;
-  font-weight: 500;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  color: var(--amber);
-  opacity: 0;
-  transition: opacity .35s;
-}
-#pause-badge.visible { opacity: .7; }
-
-/* ── Responsive ── */
-@media (max-width: 768px) {
-  .slide { padding: 60px 6vw; }
-  #breadcrumb { padding: .4rem .8rem; gap: 0; }
-  .crumb { font-size: .68rem; padding: .25rem .35rem; overflow: hidden; text-overflow: ellipsis; max-width: 90px; }
-  .crumb-sep { font-size: .55rem; margin: 0 .05rem; }
-  .comparison { grid-template-columns: 1fr; gap: 1.5rem; }
-  .code-comparison { grid-template-columns: 1fr; gap: 1.5rem; }
-  .code-block pre { font-size: .65rem; }
-  .summary-grid {
-    grid-template-columns: 1.2fr repeat(4, 1fr);
-    font-size: .75rem;
-  }
-  .summary-grid .cell { padding: .6rem .5rem; }
-  .pipeline-diagram { flex-wrap: wrap; gap: .5rem; }
-  .node-icon { width: 56px; height: 56px; border-radius: 12px; }
-  .node-icon svg { width: 28px; height: 28px; }
-}
-
-/* ── Reduced Motion ── */
-@media (prefers-reduced-motion: reduce) {
-  #slide-track { transition: none; }
-  #progress-bar { transition: none; }
-  .pipeline-node, .pipeline-arrow { animation: none; opacity: 1; }
-  .crumb { transition: none; }
-  .crumb::after { transition: none; }
-}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Building Data Pipelines: Native vs dbt</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link
+    href="https://cdn.jsdelivr.net/npm/@fontsource/maple-mono@5.2.6/400.css"
+    rel="stylesheet">
+  <style>
+    /* ── Reset ── */
+    *,
+    *::before,
+    *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg: #111113;
+      --bg-card: #1a1a1f;
+      --text: #e8e4df;
+      --text-dim: #8a8680;
+      --amber: #d4a24e;
+      --amber-glow: rgba(212, 162, 78, .15);
+      --teal: #4ecdc4;
+      --teal-glow: rgba(78, 205, 196, .12);
+      --font-heading: 'Space Grotesk', sans-serif;
+      --font-body: 'IBM Plex Sans', sans-serif;
+      --font-mono: 'Maple Mono', 'Maple Mono NF', 'SF Mono', 'Fira Code', 'Cascadia Code', 'Courier New', monospace;
+      --slide-transition: .6s cubic-bezier(.4, 0, .2, 1);
+    }
+
+    html,
+    body {
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-weight: 400;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Subtle grain texture overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      opacity: .035;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 200px;
+    }
+
+    /* ── Progress Bar ── */
+    #progress-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 3px;
+      width: 0%;
+      background: linear-gradient(90deg, var(--amber), var(--teal));
+      z-index: 1000;
+      transition: none;
+    }
+
+    /* ── Slide Track ── */
+    #slide-track {
+      display: flex;
+      height: 100vh;
+      transition: transform var(--slide-transition);
+      position: relative;
+      z-index: 1;
+    }
+
+    .slide {
+      min-width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 8vw;
+      position: relative;
+    }
+
+    /* ── Shared Typography ── */
+    h1,
+    h2,
+    h3 {
+      font-family: var(--font-heading);
+      font-weight: 600;
+      line-height: 1.15;
+    }
+
+    h1 {
+      font-size: clamp(2.2rem, 5vw, 4.2rem);
+      letter-spacing: -.02em;
+    }
+
+    h2 {
+      font-size: clamp(1.6rem, 3.2vw, 2.6rem);
+      letter-spacing: -.015em;
+    }
+
+    h3 {
+      font-size: clamp(1.1rem, 1.8vw, 1.4rem);
+    }
+
+    p,
+    li {
+      font-size: clamp(.95rem, 1.3vw, 1.15rem);
+      line-height: 1.65;
+      color: var(--text-dim);
+    }
+
+    li {
+      margin-bottom: .45em;
+    }
+
+    .accent-amber {
+      color: var(--amber);
+    }
+
+    .accent-teal {
+      color: var(--teal);
+    }
+
+    /* ── Slide 1 : Hero / Landing ── */
+    .hero-content {
+      text-align: center;
+      max-width: 900px;
+    }
+
+    .hero-content h1 {
+      margin-bottom: .4em;
+    }
+
+    .hero-content h1 .highlight {
+      background: linear-gradient(135deg, var(--amber), var(--teal));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-subtitle {
+      font-size: clamp(1rem, 1.6vw, 1.3rem);
+      color: var(--text-dim);
+      font-weight: 300;
+      margin-bottom: 3rem;
+      font-style: italic;
+    }
+
+    /* Animated pipeline diagram */
+    .pipeline-diagram {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(1rem, 2vw, 1.8rem);
+      margin: 2.5rem auto 2rem;
+      max-width: 720px;
+      position: relative;
+    }
+
+    .pipeline-node {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: .6rem;
+      flex: 0 0 auto;
+      opacity: 0;
+      animation: fadeInUp .7s ease forwards;
+    }
+
+    .pipeline-node:nth-child(1) {
+      animation-delay: .3s;
+    }
+
+    .pipeline-node:nth-child(2) {
+      animation-delay: .55s;
+    }
+
+    .pipeline-node:nth-child(3) {
+      animation-delay: .8s;
+    }
+
+    .node-icon {
+      width: 72px;
+      height: 72px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1.5px solid rgba(255, 255, 255, .08);
+    }
+
+    .node-icon.snowflake-bg {
+      background: #1a2a3a;
+    }
+
+    .node-icon.databricks-bg {
+      background: #2a1a1a;
+    }
+
+    .node-icon.dbt-bg {
+      background: #1a2a20;
+    }
+
+    .node-icon svg,
+    .node-icon img {
+      width: 38px;
+      height: 38px;
+    }
+
+    .node-label {
+      font-family: var(--font-heading);
+      font-size: .82rem;
+      font-weight: 500;
+      color: var(--text-dim);
+      letter-spacing: .03em;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(18px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    /* Side navigation arrows */
+    .nav-arrow {
+      position: fixed;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 150;
+      background: rgba(255, 255, 255, .04);
+      border: 1px solid rgba(255, 255, 255, .06);
+      border-radius: 50%;
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+      opacity: .35;
+      transition: opacity .3s ease, background .3s ease, transform .3s ease;
+    }
+
+    .nav-arrow:hover {
+      opacity: .9;
+      background: var(--amber-glow);
+      transform: translateY(-50%) scale(1.1);
+    }
+
+    .nav-arrow:active {
+      transform: translateY(-50%) scale(.95);
+    }
+
+    .nav-arrow:focus-visible {
+      outline: 2px solid var(--teal);
+      outline-offset: 3px;
+    }
+
+    .nav-arrow svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .nav-arrow-left {
+      left: 18px;
+    }
+
+    .nav-arrow-right {
+      right: 18px;
+    }
+
+    /* ── Slides 2-4 : Comparison Layout ── */
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+      width: 100%;
+      max-width: 1100px;
+    }
+
+    .comparison-header {
+      grid-column: 1 / -1;
+      text-align: center;
+      margin-bottom: .5rem;
+    }
+
+    .comparison-header h2 span {
+      color: var(--text-dim);
+      font-weight: 400;
+    }
+
+    .compare-card {
+      background: var(--bg-card);
+      border: 1px solid rgba(255, 255, 255, .06);
+      border-radius: 14px;
+      padding: 2rem 2.2rem;
+    }
+
+    .compare-card.native-card {
+      border-top: 2.5px solid var(--amber);
+    }
+
+    .compare-card.dbt-card {
+      border-top: 2.5px solid var(--teal);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      margin-bottom: 1.4rem;
+    }
+
+    .card-header svg,
+    .card-header img {
+      width: 30px;
+      height: 30px;
+      flex-shrink: 0;
+    }
+
+    .card-header h3 {
+      white-space: nowrap;
+    }
+
+    .pros-cons h4 {
+      font-family: var(--font-heading);
+      font-size: .85rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: .6rem;
+      margin-top: 1rem;
+    }
+
+    .pros-cons h4.pro-label {
+      color: var(--teal);
+    }
+
+    .pros-cons h4.con-label {
+      color: #c45b5b;
+    }
+
+    .pros-cons ul {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .pros-cons li {
+      padding-left: 1.2em;
+      position: relative;
+    }
+
+    .pros-cons li::before {
+      position: absolute;
+      left: 0;
+      font-weight: 600;
+    }
+
+    .pros-cons .pro-list li::before {
+      content: '+';
+      color: var(--teal);
+    }
+
+    .pros-cons .con-list li::before {
+      content: '\2013';
+      color: #c45b5b;
+    }
+
+    /* ── Slide 3 : Notebook Debugging Flow ── */
+    .nb-debug-layout {
+      display: grid;
+      grid-template-columns: minmax(320px, .9fr) minmax(460px, 1.1fr);
+      gap: 2rem;
+      width: 100%;
+      max-width: 1240px;
+      align-items: start;
+    }
+
+    .nb-debug-header {
+      grid-column: 1 / -1;
+      text-align: center;
+      margin-bottom: .25rem;
+    }
+
+    .nb-debug-header p {
+      max-width: 940px;
+      margin: .55rem auto 0;
+      font-style: italic;
+    }
+
+    .nb-debug-story,
+    .nb-diagram-card {
+      background: var(--bg-card);
+      border: 1px solid rgba(255, 255, 255, .06);
+      border-radius: 14px;
+      padding: 1.45rem 1.6rem;
+    }
+
+    .nb-debug-story {
+      border-top: 2.5px solid var(--amber);
+    }
+
+    .nb-diagram-card {
+      border-top: 2.5px solid var(--teal);
+    }
+
+    .nb-debug-story h3 {
+      margin-bottom: .7rem;
+    }
+
+    .nb-debug-list {
+      margin-left: 1.2rem;
+    }
+
+    .nb-debug-list li {
+      margin-bottom: .7rem;
+      color: var(--text-dim);
+    }
+
+    .nb-debug-story code {
+      font-family: var(--font-mono);
+      font-size: .98em;
+      background: rgba(255, 255, 255, .08);
+      padding: .1em .38em;
+      border-radius: 4px;
+      color: var(--text);
+    }
+
+    .nb-debug-footnote {
+      margin-top: .8rem;
+      color: var(--text);
+      font-size: .92rem;
+    }
+
+    .nb-dependency-svg {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 10px;
+      background: rgba(17, 17, 19, .45);
+    }
+
+    .nb-box {
+      fill: #1a1a20;
+      stroke: rgba(255, 255, 255, .2);
+      stroke-width: 1.8;
+    }
+
+    .nb-box-root {
+      stroke: var(--amber);
+    }
+
+    .nb-box-layer {
+      stroke: #ff8b75;
+    }
+
+    .nb-box-child {
+      stroke: var(--teal);
+    }
+
+    .nb-box-muted {
+      stroke: rgba(255, 255, 255, .18);
+      fill: #16181d;
+    }
+
+    .nb-box-alert {
+      stroke: #c45b5b;
+      fill: rgba(196, 91, 91, .16);
+    }
+
+    .nb-arrow {
+      stroke: rgba(255, 255, 255, .48);
+      stroke-width: 2.2;
+      fill: none;
+      marker-end: url(#nb-arrow-head);
+    }
+
+    .nb-backtrack {
+      stroke: var(--amber);
+      stroke-width: 2;
+      stroke-dasharray: 7 5;
+      fill: none;
+      marker-end: url(#nb-back-arrow-head);
+    }
+
+    .nb-label {
+      fill: var(--text);
+      font-family: var(--font-heading);
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .nb-sub {
+      fill: var(--text-dim);
+      font-family: var(--font-body);
+      font-size: 12px;
+    }
+
+    .nb-step {
+      fill: var(--amber);
+      font-family: var(--font-heading);
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .nb-diagram-caption {
+      margin-top: .65rem;
+      font-size: .8rem;
+      color: var(--text-dim);
+    }
+
+    /* ── DLT visual options slides ── */
+    .option-slide-wrap {
+      width: 100%;
+      max-width: 1200px;
+    }
+
+    .option-header {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    .option-header p {
+      margin-top: .45rem;
+      font-style: italic;
+    }
+
+    .option-card {
+      background: var(--bg-card);
+      border: 1px solid rgba(255, 255, 255, .06);
+      border-radius: 14px;
+      padding: 1.35rem 1.45rem;
+    }
+
+    .chips-card {
+      max-width: 980px;
+      margin: 0 auto;
+      border-top: 2.5px solid var(--amber);
+    }
+
+    .chips-card h3 {
+      margin-bottom: .2rem;
+    }
+
+    .chips-subtitle {
+      margin-bottom: .95rem;
+    }
+
+    .chip-stack {
+      display: grid;
+      gap: .75rem;
+    }
+
+    .chip-row {
+      display: grid;
+      grid-template-columns: 130px 1fr;
+      gap: .8rem;
+      align-items: center;
+      border: 1px solid rgba(255, 255, 255, .08);
+      border-radius: 10px;
+      padding: .75rem .85rem;
+      background: rgba(255, 255, 255, .015);
+    }
+
+    .chip-label {
+      display: inline-block;
+      text-align: center;
+      border-radius: 999px;
+      padding: .3rem .55rem;
+      font-family: var(--font-heading);
+      font-size: .72rem;
+      font-weight: 600;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .chip-row p {
+      margin: 0;
+      color: var(--text-dim);
+    }
+
+    .chip-row.neat {
+      border-left: 3px solid var(--teal);
+    }
+
+    .chip-row.neat .chip-label {
+      background: var(--teal-glow);
+      color: var(--teal);
+    }
+
+    .chip-row.tradeoff {
+      border-left: 3px solid var(--amber);
+    }
+
+    .chip-row.tradeoff .chip-label {
+      background: var(--amber-glow);
+      color: var(--amber);
+    }
+
+    .chip-row.constraint {
+      border-left: 3px solid #ff8b75;
+    }
+
+    .chip-row.constraint .chip-label {
+      background: rgba(255, 139, 117, .15);
+      color: #ffb3a4;
+    }
+
+    .chip-row.cost {
+      border-left: 3px solid #c45b5b;
+    }
+
+    .chip-row.cost .chip-label {
+      background: rgba(196, 91, 91, .15);
+      color: #e39191;
+    }
+
+    /* ── "So What" Callout Banner ── */
+    .so-what {
+      margin-top: 1.25rem;
+      padding: 1rem 1.4rem;
+      background: rgba(212, 162, 78, .06);
+      border-left: 3px solid var(--amber);
+      border-radius: 0 10px 10px 0;
+      font-family: var(--font-heading);
+      font-size: clamp(1rem, 1.5vw, 1.2rem);
+      font-weight: 500;
+      font-style: italic;
+      color: var(--text);
+      text-align: left;
+    }
+
+    /* ── Architecture Canvas Slides ── */
+    .arch-canvas-wrap {
+      width: 100%;
+      max-width: 1100px;
+      text-align: center;
+    }
+
+    .arch-canvas-wrap h2 {
+      margin-bottom: .3rem;
+    }
+
+    .arch-canvas-subtitle {
+      font-style: italic;
+      color: var(--text-dim);
+      font-size: clamp(.9rem, 1.2vw, 1.1rem);
+      margin-bottom: 1rem;
+    }
+
+    .arch-canvas {
+      width: 100%;
+      height: 520px;
+      border-radius: 12px;
+      display: block;
+    }
+
+    .sp-accent {
+      color: #29B5E8;
+    }
+
+    .nb-accent {
+      color: #FF3621;
+    }
+
+    .dlt-accent {
+      color: #FF6B35;
+    }
+
+    .dbt-accent {
+      color: var(--teal);
+    }
+
+    /* ── Code Comparison Slides ── */
+    .code-comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      width: 100%;
+      max-width: 1200px;
+    }
+
+    .code-comparison-header {
+      grid-column: 1 / -1;
+      text-align: center;
+      margin-bottom: .5rem;
+    }
+
+    .code-comparison-header p {
+      margin-top: .5rem;
+      font-style: italic;
+    }
+
+    .code-comparison-header code {
+      background: rgba(255, 255, 255, .08);
+      padding: .15em .45em;
+      border-radius: 4px;
+      font-size: 1em;
+      font-family: var(--font-mono);
+    }
+
+    .code-panel {
+      background: var(--bg-card);
+      border: 1px solid rgba(255, 255, 255, .06);
+      border-radius: 14px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .code-panel.native-panel {
+      border-top: 2.5px solid var(--amber);
+    }
+
+    .code-panel.dbt-panel {
+      border-top: 2.5px solid var(--teal);
+    }
+
+    .code-panel-header {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      padding: .7rem 1.2rem;
+      border-bottom: 1px solid rgba(255, 255, 255, .06);
+      background: rgba(255, 255, 255, .02);
+    }
+
+    .code-panel-header h3 {
+      font-size: clamp(.85rem, 1.1vw, 1.05rem);
+    }
+
+    .code-block {
+      padding: .8rem 1rem;
+      overflow-x: auto;
+      flex: 1;
+    }
+
+    .code-block pre {
+      margin: 0;
+      font-family: var(--font-mono);
+      font-size: clamp(.8rem, .95vw, .98rem);
+      line-height: 1.5;
+      color: #a9b7c6;
+      white-space: pre;
+      tab-size: 2;
+    }
+
+    .code-block .kw {
+      color: #c792ea;
+    }
+
+    .code-block .fn {
+      color: #82aaff;
+    }
+
+    .code-block .str {
+      color: #c3e88d;
+    }
+
+    .code-block .cm {
+      color: #546e7a;
+      font-style: italic;
+    }
+
+    .code-block .num {
+      color: #f78c6c;
+    }
+
+    .code-block .ty {
+      color: #ffcb6b;
+    }
+
+    .code-block .dec {
+      color: #82aaff;
+    }
+
+    .code-metric {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      padding: .65rem 1.2rem;
+      border-top: 1px solid rgba(255, 255, 255, .06);
+      background: rgba(255, 255, 255, .02);
+    }
+
+    .code-metric .metric-number {
+      font-family: var(--font-heading);
+      font-weight: 700;
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+
+    .code-metric .metric-label {
+      font-size: .78rem;
+      color: var(--text-dim);
+    }
+
+    .code-metric.amber .metric-number {
+      color: var(--amber);
+    }
+
+    .code-metric.teal .metric-number {
+      color: var(--teal);
+    }
+
+    /* ── Slide 5 : Summary ── */
+    .summary-wrap {
+      text-align: center;
+      width: 100%;
+      max-width: 980px;
+    }
+
+    .summary-wrap h2 {
+      margin-bottom: .35rem;
+    }
+
+    .summary-subhead {
+      margin: 0 auto 1.35rem;
+      max-width: 760px;
+      font-size: clamp(.95rem, 1.2vw, 1.1rem);
+      color: var(--text-dim);
+      font-style: italic;
+    }
+
+    .summary-list {
+      list-style: none;
+      margin: 0 auto;
+      padding: 0;
+      max-width: 950px;
+      display: grid;
+      gap: .72rem;
+    }
+
+    .summary-item {
+      display: grid;
+      grid-template-columns: 32px 1fr;
+      align-items: start;
+      gap: .8rem;
+      padding: .85rem .95rem;
+      background: var(--bg-card);
+      border: 1px solid rgba(255, 255, 255, .06);
+      border-radius: 12px;
+      text-align: left;
+    }
+
+    .summary-item-label {
+      width: 28px;
+      height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      border: 1px solid rgba(212, 162, 78, .28);
+      background: var(--amber-glow);
+      color: var(--amber);
+      font-family: var(--font-heading);
+      font-size: .8rem;
+      font-weight: 600;
+      line-height: 1;
+      margin-top: .05rem;
+    }
+
+    .summary-item:nth-child(even) .summary-item-label {
+      border-color: rgba(78, 205, 196, .3);
+      background: var(--teal-glow);
+      color: var(--teal);
+    }
+
+    .summary-item p {
+      margin: 0;
+      font-size: clamp(.86rem, 1.05vw, .98rem);
+      line-height: 1.5;
+      color: var(--text-dim);
+    }
+
+    .summary-item strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .summary-decision {
+      margin: 1.4rem auto 0;
+      max-width: 900px;
+      padding-top: .95rem;
+      border-top: 1px solid rgba(255, 255, 255, .08);
+      font-size: clamp(1rem, 1.45vw, 1.18rem);
+      font-style: italic;
+      color: var(--text);
+    }
+
+    /* ── Breadcrumb Navigation ── */
+    #breadcrumb {
+      position: fixed;
+      top: 3px;
+      left: 0;
+      width: 100%;
+      z-index: 999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      padding: .55rem 1.5rem;
+      background: rgba(17, 17, 19, .85);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      font-family: var(--font-heading);
+      font-size: .78rem;
+      letter-spacing: .02em;
+    }
+
+    .crumb {
+      background: none;
+      border: none;
+      padding: .3rem .6rem;
+      color: var(--text-dim);
+      opacity: .5;
+      font-family: var(--font-heading);
+      font-size: .78rem;
+      font-weight: 500;
+      letter-spacing: .02em;
+      cursor: pointer;
+      position: relative;
+      transition: color .25s ease, opacity .25s ease, transform .25s ease;
+      white-space: nowrap;
+    }
+
+    .crumb::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      width: 0;
+      height: 1.5px;
+      background: var(--amber);
+      transition: width .3s ease, left .3s ease;
+    }
+
+    .crumb:hover {
+      color: var(--text);
+      opacity: .85;
+      transform: scale(1.05);
+    }
+
+    .crumb:hover::after {
+      width: 70%;
+      left: 15%;
+    }
+
+    .crumb:active {
+      background: var(--amber-glow);
+      border-radius: 6px;
+      transition: background .1s ease;
+    }
+
+    .crumb.active {
+      color: var(--amber);
+      opacity: 1;
+    }
+
+    .crumb.active::after {
+      width: 70%;
+      left: 15%;
+    }
+
+    .crumb:focus-visible {
+      outline: 2px solid var(--teal);
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+
+    .crumb-sep {
+      color: var(--text-dim);
+      opacity: .2;
+      font-size: .65rem;
+      margin: 0 .15rem;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    /* ── Dots Navigation ── */
+    #dots {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+      z-index: 100;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .15);
+      cursor: pointer;
+      transition: background .3s, transform .3s;
+      border: none;
+      padding: 0;
+    }
+
+    .dot:hover {
+      background: rgba(255, 255, 255, .35);
+    }
+
+    .dot.active {
+      background: var(--amber);
+      transform: scale(1.25);
+    }
+
+    /* ── Resume Button ── */
+    #resume-btn {
+      position: fixed;
+      bottom: 30px;
+      right: 36px;
+      z-index: 200;
+      background: var(--amber);
+      color: var(--bg);
+      font-family: var(--font-heading);
+      font-weight: 600;
+      font-size: .88rem;
+      letter-spacing: .04em;
+      padding: .6rem 1.5rem;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .35s, transform .25s;
+      box-shadow: 0 4px 20px rgba(212, 162, 78, .3);
+    }
+
+    #resume-btn:hover {
+      transform: scale(1.05);
+    }
+
+    #resume-btn:focus-visible {
+      outline: 2px solid var(--teal);
+      outline-offset: 3px;
+    }
+
+    #resume-btn.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* Pause indicator */
+    #pause-badge {
+      position: fixed;
+      top: 52px;
+      right: 24px;
+      z-index: 200;
+      font-family: var(--font-heading);
+      font-size: .72rem;
+      font-weight: 500;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--amber);
+      opacity: 0;
+      transition: opacity .35s;
+    }
+
+    #pause-badge.visible {
+      opacity: .7;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .slide {
+        padding: 60px 6vw;
+      }
+
+      #breadcrumb {
+        padding: .4rem .8rem;
+        gap: 0;
+      }
+
+      .crumb {
+        font-size: .68rem;
+        padding: .25rem .35rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 90px;
+      }
+
+      .crumb-sep {
+        font-size: .55rem;
+        margin: 0 .05rem;
+      }
+
+      .nb-debug-layout {
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+      }
+
+      .nb-debug-story,
+      .nb-diagram-card {
+        padding: 1.1rem 1.2rem;
+      }
+
+      .nb-diagram-caption {
+        font-size: .78rem;
+      }
+
+      .option-card {
+        padding: 1rem 1.1rem;
+      }
+
+      .chip-row {
+        grid-template-columns: 1fr;
+        align-items: start;
+      }
+
+      .comparison {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+
+      .arch-canvas {
+        height: 380px;
+      }
+
+      .code-comparison {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+
+      .code-block pre {
+        font-size: .78rem;
+      }
+
+      .summary-subhead {
+        margin-bottom: 1rem;
+      }
+
+      .summary-list {
+        gap: .6rem;
+      }
+
+      .summary-item {
+        grid-template-columns: 26px 1fr;
+        gap: .65rem;
+        padding: .75rem .8rem;
+      }
+
+      .summary-item-label {
+        width: 22px;
+        height: 22px;
+        font-size: .68rem;
+      }
+
+      .summary-item p {
+        font-size: .85rem;
+      }
+
+      .summary-decision {
+        margin-top: 1rem;
+        padding-top: .8rem;
+        font-size: 1rem;
+      }
+
+      .pipeline-diagram {
+        flex-wrap: wrap;
+        gap: .5rem;
+      }
+
+      .node-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 12px;
+      }
+
+      .node-icon svg {
+        width: 28px;
+        height: 28px;
+      }
+
+      .so-what {
+        font-size: .95rem;
+        padding: .8rem 1rem;
+      }
+    }
+
+    /* ── Reduced Motion ── */
+    @media (prefers-reduced-motion: reduce) {
+      #slide-track {
+        transition: none;
+      }
+
+      #progress-bar {
+        transition: none;
+      }
+
+      .pipeline-node {
+        animation: none;
+        opacity: 1;
+      }
+
+      .crumb {
+        transition: none;
+      }
+
+      .crumb::after {
+        transition: none;
+      }
+    }
+  </style>
 </head>
+
 <body>
 
-<!-- Progress bar -->
-<div id="progress-bar"></div>
+  <!-- Progress bar -->
+  <div id="progress-bar"></div>
 
-<!-- Breadcrumb navigation -->
-<nav id="breadcrumb" aria-label="Slide titles"></nav>
+  <!-- Breadcrumb navigation -->
+  <nav id="breadcrumb" aria-label="Slide titles"></nav>
 
-<!-- Pause badge -->
-<div id="pause-badge">Paused</div>
+  <!-- Pause badge -->
+  <div id="pause-badge">Paused</div>
 
-<!-- Resume button -->
-<button id="resume-btn" aria-label="Resume auto-play">&#9654;&ensp;Resume</button>
+  <!-- Resume button -->
+  <button id="resume-btn" aria-label="Resume auto-play">&#9654;&ensp;Resume</button>
 
-<!-- Slide track -->
-<div id="slide-track">
+  <!-- Slide track -->
+  <div id="slide-track">
 
-  <!-- ============================== SLIDE 1 : HERO ============================== -->
-  <section class="slide" role="group" aria-label="Landing">
-    <div class="hero-content">
-      <h1>Building Data Pipelines:<br><span class="highlight">Native vs dbt</span></h1>
-      <p class="hero-subtitle">"Same sandwich shop. Same data. Four different ways to transform it."</p>
+    <!-- ============================== SLIDE 1 : HERO ============================== -->
+    <section class="slide" role="group" aria-label="Landing">
+      <div class="hero-content">
+        <h1>Building Data Pipelines:<br><span class="highlight">Native vs dbt</span></h1>
+        <p class="hero-subtitle">"Same sandwich shop. Same data. Four different ways to transform it."</p>
 
-      <div class="pipeline-diagram">
-        <!-- Snowflake Node -->
-        <div class="pipeline-node">
-          <div class="node-icon snowflake-bg">
-            <img src="https://cdn.simpleicons.org/snowflake/29B5E8" alt="Snowflake logo">
+        <div class="pipeline-diagram">
+          <!-- Snowflake Node -->
+          <div class="pipeline-node">
+            <div class="node-icon snowflake-bg">
+              <img src="https://cdn.simpleicons.org/snowflake/29B5E8" alt="Snowflake logo">
+            </div>
+            <span class="node-label">Snowflake</span>
           </div>
-          <span class="node-label">Snowflake</span>
-        </div>
 
-        <!-- Arrow -->
-        <div class="pipeline-arrow">
-          <svg viewBox="0 0 48 24" fill="none"><path d="M4 12h32m0 0l-7-6m7 6l-7 6" stroke="var(--amber)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity=".5"/></svg>
-        </div>
-
-        <!-- Databricks Node -->
-        <div class="pipeline-node">
-          <div class="node-icon databricks-bg">
-            <img src="https://cdn.simpleicons.org/databricks/FF3621" alt="Databricks logo">
+          <!-- Databricks Node -->
+          <div class="pipeline-node">
+            <div class="node-icon databricks-bg">
+              <img src="https://cdn.simpleicons.org/databricks/FF3621" alt="Databricks logo">
+            </div>
+            <span class="node-label">Databricks</span>
           </div>
-          <span class="node-label">Databricks</span>
-        </div>
 
-        <!-- Arrow -->
-        <div class="pipeline-arrow">
-          <svg viewBox="0 0 48 24" fill="none"><path d="M4 12h32m0 0l-7-6m7 6l-7 6" stroke="var(--teal)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity=".5"/></svg>
-        </div>
-
-        <!-- dbt Node -->
-        <div class="pipeline-node">
-          <div class="node-icon dbt-bg">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <path fill="#ffffff" d="M15.613875 8.90125v6.124425h-1.241175v-0.624625c-0.1298 0.219025 -0.3163 0.3975 -0.543475 0.51105 -0.24335 0.121675 -0.519175 0.186575 -0.7949 0.186575 -0.340725 0.008125 -0.68145 -0.089225 -0.96535 -0.283925 -0.291975 -0.194675 -0.51915 -0.46235 -0.6652 -0.778725 -0.1622 -0.365025 -0.243325 -0.7544 -0.23525 -1.151875 -0.008075 -0.397475 0.07305 -0.78685 0.23525 -1.14375 0.14605 -0.308275 0.373225 -0.57595 0.657125 -0.762525 0.291975 -0.186575 0.6327 -0.2758 0.973425 -0.2677 0.26765 0 0.5353 0.0568 0.770575 0.178475 0.227175 0.11355 0.4137 0.2839 0.543475 0.494825v-2.068525l1.2655 -0.4137Zm-1.492575 4.915775c0.162175 -0.210925 0.2514 -0.519175 0.2514 -0.91665 0 -0.397475 -0.08105 -0.697625 -0.2514 -0.908525 -0.170375 -0.2109 -0.438125 -0.332575 -0.71385 -0.324475 -0.275825 -0.016225 -0.543475 0.10545 -0.722025 0.316375 -0.17025 0.2109 -0.259575 0.51105 -0.259575 0.9004 0 0.397475 0.089325 0.705725 0.259575 0.92475 0.170375 0.219025 0.4462 0.3407 0.722025 0.3326 0.308225 0 0.55155 -0.113575 0.71385 -0.324475Zm5.929775 -2.84725c0.291975 0.18655 0.51915 0.45425 0.657025 0.7625 0.162175 0.356925 0.243325 0.746275 0.23525 1.143775 0.008075 0.397475 -0.073075 0.79495 -0.23525 1.151875 -0.14605 0.31635 -0.373125 0.58405 -0.6652 0.778725 -0.2839 0.186575 -0.624625 0.283925 -0.96525 0.2758 -0.275825 0.008125 -0.551675 -0.056775 -0.795 -0.186575 -0.227075 -0.11355 -0.4137 -0.292025 -0.5354 -0.511025v0.6327h-1.24915V9.31495l1.257325 -0.4137v2.498425c0.1216 -0.219 0.308225 -0.397475 0.5353 -0.511025 0.243425 -0.1298 0.5111 -0.194675 0.786925 -0.186575 0.340625 -0.0081 0.68135 0.089225 0.973425 0.2677Zm-0.61655 2.839125c0.17035 -0.219025 0.2515 -0.527275 0.2515 -0.93285 0 -0.389375 -0.08115 -0.689525 -0.2515 -0.900425 -0.170375 -0.2109 -0.405625 -0.31635 -0.71385 -0.31635 -0.275725 -0.016225 -0.543475 0.10545 -0.721925 0.324475 -0.17035 0.219 -0.2515 0.51915 -0.2515 0.908525 0 0.397475 0.08115 0.705725 0.2515 0.916625 0.170375 0.219025 0.438025 0.3407 0.721925 0.324475 0.275825 0.016225 0.543475 -0.10545 0.71385 -0.324475Zm3.24475 -2.0604v1.638575c0 0.23525 0.0649 0.4056 0.178525 0.51105 0.1298 0.113575 0.300075 0.17035 0.4786 0.16225 0.137875 0 0.2839 -0.02435 0.4137 -0.0568v0.973425c-0.235275 0.081125 -0.4786 0.121675 -0.722025 0.113575 -0.519075 0 -0.9166 -0.146025 -1.19245 -0.43805 -0.275725 -0.292025 -0.413675 -0.705725 -0.413675 -1.2411V9.817875l1.257325 -0.405575v1.395225h1.070825v0.940975h-1.070825Z" stroke-width="0.25"/>
-              <path fill="#ff694a" d="M8.840425 7.8873c0.2109 0.2028 0.3488 0.4705 0.38125 0.762525 0 0.121675 -0.03245 0.2028 -0.10545 0.3569 -0.073 0.154125 -0.973425 1.7116 -1.2411 2.141525 -0.154125 0.251475 -0.23525 0.551625 -0.23525 0.843625 0 0.30015 0.081125 0.592175 0.23525 0.84365 0.267675 0.429925 1.1681 1.9955 1.2411 2.149625 0.073 0.154125 0.10545 0.227125 0.10545 0.3488 -0.03245 0.292025 -0.16225 0.559725 -0.37315 0.7544 -0.2028 0.2109 -0.470475 0.348825 -0.7544 0.37315 -0.121675 0 -0.2028 -0.03245 -0.3488 -0.10545 -0.146025 -0.073025 -1.735925 -0.9491 -2.16585 -1.216775 -0.03245 -0.016225 -0.0649 -0.040575 -0.10545 -0.0568l-2.1253 -1.257325c0.04865 0.4056 0.227125 0.794975 0.51915 1.078875 0.056775 0.056775 0.113575 0.10545 0.17845 0.154125 -0.048675 0.024325 -0.10545 0.048675 -0.154125 0.081125 -0.429925 0.267675 -1.9955 1.1681 -2.1496225 1.2411 -0.1541225 0.073 -0.2271325 0.10545 -0.3569225 0.10545 -0.292025 -0.03245 -0.559715 -0.162225 -0.7544 -0.373125 -0.2109075 -0.2028 -0.3488075 -0.4705 -0.381255 -0.762525 0.0081125 -0.121675 0.04056 -0.24335 0.105455 -0.3488 0.073005 -0.154125 0.9734175 -1.719725 1.2411025 -2.14965 0.154135 -0.25145 0.2352475 -0.543475 0.2352475 -0.843625 0 -0.300125 -0.0811125 -0.59215 -0.2352475 -0.843625 -0.267685 -0.44615 -1.17621 -2.011725 -1.2411025 -2.16585 -0.064895 -0.10545 -0.0973425 -0.227125 -0.105455 -0.3488 0.0324475 -0.292025 0.1622375 -0.559725 0.373145 -0.762525 0.202795 -0.2109 0.470485 -0.3407 0.76251 -0.37315 0.121675 0.008125 0.24335 0.040575 0.3569225 0.105475 0.12979 0.056775 1.2735475 0.72195 1.8819475 1.078875l0.1379 0.0811c0.04865 0.03245 0.089225 0.056775 0.121675 0.073025l0.0649 0.04055 2.16585 1.281675c-0.048675 -0.486725 -0.30015 -0.932875 -0.6895 -1.233 0.048675 -0.02435 0.10545 -0.048675 0.154125 -0.081125 0.429925 -0.2677 1.9955 -1.176225 2.149625 -1.2411 0.10545 -0.0649 0.227125 -0.09735 0.356925 -0.105475 0.2839 0.03245 0.5516 0.16225 0.7544 0.37315ZM4.8494 12.57595l0.462375 -0.4624c0.0649 -0.064875 0.0649 -0.162225 0 -0.227125l-0.462375 -0.462375c-0.0649 -0.0649 -0.162225 -0.0649 -0.227125 0l-0.462375 0.462375c-0.0649 0.0649 -0.0649 0.16225 0 0.227125l0.462375 0.4624c0.056775 0.056775 0.162225 0.056775 0.227125 0Z" stroke-width="0.25"/>
-            </svg>
+          <!-- dbt Node -->
+          <div class="pipeline-node">
+            <div class="node-icon dbt-bg">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <path fill="#ffffff"
+                  d="M15.613875 8.90125v6.124425h-1.241175v-0.624625c-0.1298 0.219025 -0.3163 0.3975 -0.543475 0.51105 -0.24335 0.121675 -0.519175 0.186575 -0.7949 0.186575 -0.340725 0.008125 -0.68145 -0.089225 -0.96535 -0.283925 -0.291975 -0.194675 -0.51915 -0.46235 -0.6652 -0.778725 -0.1622 -0.365025 -0.243325 -0.7544 -0.23525 -1.151875 -0.008075 -0.397475 0.07305 -0.78685 0.23525 -1.14375 0.14605 -0.308275 0.373225 -0.57595 0.657125 -0.762525 0.291975 -0.186575 0.6327 -0.2758 0.973425 -0.2677 0.26765 0 0.5353 0.0568 0.770575 0.178475 0.227175 0.11355 0.4137 0.2839 0.543475 0.494825v-2.068525l1.2655 -0.4137Zm-1.492575 4.915775c0.162175 -0.210925 0.2514 -0.519175 0.2514 -0.91665 0 -0.397475 -0.08105 -0.697625 -0.2514 -0.908525 -0.170375 -0.2109 -0.438125 -0.332575 -0.71385 -0.324475 -0.275825 -0.016225 -0.543475 0.10545 -0.722025 0.316375 -0.17025 0.2109 -0.259575 0.51105 -0.259575 0.9004 0 0.397475 0.089325 0.705725 0.259575 0.92475 0.170375 0.219025 0.4462 0.3407 0.722025 0.3326 0.308225 0 0.55155 -0.113575 0.71385 -0.324475Zm5.929775 -2.84725c0.291975 0.18655 0.51915 0.45425 0.657025 0.7625 0.162175 0.356925 0.243325 0.746275 0.23525 1.143775 0.008075 0.397475 -0.073075 0.79495 -0.23525 1.151875 -0.14605 0.31635 -0.373125 0.58405 -0.6652 0.778725 -0.2839 0.186575 -0.624625 0.283925 -0.96525 0.2758 -0.275825 0.008125 -0.551675 -0.056775 -0.795 -0.186575 -0.227075 -0.11355 -0.4137 -0.292025 -0.5354 -0.511025v0.6327h-1.24915V9.31495l1.257325 -0.4137v2.498425c0.1216 -0.219 0.308225 -0.397475 0.5353 -0.511025 0.243425 -0.1298 0.5111 -0.194675 0.786925 -0.186575 0.340625 -0.0081 0.68135 0.089225 0.973425 0.2677Zm-0.61655 2.839125c0.17035 -0.219025 0.2515 -0.527275 0.2515 -0.93285 0 -0.389375 -0.08115 -0.689525 -0.2515 -0.900425 -0.170375 -0.2109 -0.405625 -0.31635 -0.71385 -0.31635 -0.275725 -0.016225 -0.543475 0.10545 -0.721925 0.324475 -0.17035 0.219 -0.2515 0.51915 -0.2515 0.908525 0 0.397475 0.08115 0.705725 0.2515 0.916625 0.170375 0.219025 0.438025 0.3407 0.721925 0.324475 0.275825 0.016225 0.543475 -0.10545 0.71385 -0.324475Zm3.24475 -2.0604v1.638575c0 0.23525 0.0649 0.4056 0.178525 0.51105 0.1298 0.113575 0.300075 0.17035 0.4786 0.16225 0.137875 0 0.2839 -0.02435 0.4137 -0.0568v0.973425c-0.235275 0.081125 -0.4786 0.121675 -0.722025 0.113575 -0.519075 0 -0.9166 -0.146025 -1.19245 -0.43805 -0.275725 -0.292025 -0.413675 -0.705725 -0.413675 -1.2411V9.817875l1.257325 -0.405575v1.395225h1.070825v0.940975h-1.070825Z"
+                  stroke-width="0.25" />
+                <path fill="#ff694a"
+                  d="M8.840425 7.8873c0.2109 0.2028 0.3488 0.4705 0.38125 0.762525 0 0.121675 -0.03245 0.2028 -0.10545 0.3569 -0.073 0.154125 -0.973425 1.7116 -1.2411 2.141525 -0.154125 0.251475 -0.23525 0.551625 -0.23525 0.843625 0 0.30015 0.081125 0.592175 0.23525 0.84365 0.267675 0.429925 1.1681 1.9955 1.2411 2.149625 0.073 0.154125 0.10545 0.227125 0.10545 0.3488 -0.03245 0.292025 -0.16225 0.559725 -0.37315 0.7544 -0.2028 0.2109 -0.470475 0.348825 -0.7544 0.37315 -0.121675 0 -0.2028 -0.03245 -0.3488 -0.10545 -0.146025 -0.073025 -1.735925 -0.9491 -2.16585 -1.216775 -0.03245 -0.016225 -0.0649 -0.040575 -0.10545 -0.0568l-2.1253 -1.257325c0.04865 0.4056 0.227125 0.794975 0.51915 1.078875 0.056775 0.056775 0.113575 0.10545 0.17845 0.154125 -0.048675 0.024325 -0.10545 0.048675 -0.154125 0.081125 -0.429925 0.267675 -1.9955 1.1681 -2.1496225 1.2411 -0.1541225 0.073 -0.2271325 0.10545 -0.3569225 0.10545 -0.292025 -0.03245 -0.559715 -0.162225 -0.7544 -0.373125 -0.2109075 -0.2028 -0.3488075 -0.4705 -0.381255 -0.762525 0.0081125 -0.121675 0.04056 -0.24335 0.105455 -0.3488 0.073005 -0.154125 0.9734175 -1.719725 1.2411025 -2.14965 0.154135 -0.25145 0.2352475 -0.543475 0.2352475 -0.843625 0 -0.300125 -0.0811125 -0.59215 -0.2352475 -0.843625 -0.267685 -0.44615 -1.17621 -2.011725 -1.2411025 -2.16585 -0.064895 -0.10545 -0.0973425 -0.227125 -0.105455 -0.3488 0.0324475 -0.292025 0.1622375 -0.559725 0.373145 -0.762525 0.202795 -0.2109 0.470485 -0.3407 0.76251 -0.37315 0.121675 0.008125 0.24335 0.040575 0.3569225 0.105475 0.12979 0.056775 1.2735475 0.72195 1.8819475 1.078875l0.1379 0.0811c0.04865 0.03245 0.089225 0.056775 0.121675 0.073025l0.0649 0.04055 2.16585 1.281675c-0.048675 -0.486725 -0.30015 -0.932875 -0.6895 -1.233 0.048675 -0.02435 0.10545 -0.048675 0.154125 -0.081125 0.429925 -0.2677 1.9955 -1.176225 2.149625 -1.2411 0.10545 -0.0649 0.227125 -0.09735 0.356925 -0.105475 0.2839 0.03245 0.5516 0.16225 0.7544 0.37315ZM4.8494 12.57595l0.462375 -0.4624c0.0649 -0.064875 0.0649 -0.162225 0 -0.227125l-0.462375 -0.462375c-0.0649 -0.0649 -0.162225 -0.0649 -0.227125 0l-0.462375 0.462375c-0.0649 0.0649 -0.0649 0.16225 0 0.227125l0.462375 0.4624c0.056775 0.056775 0.162225 0.056775 0.227125 0Z"
+                  stroke-width="0.25" />
+              </svg>
+            </div>
+            <span class="node-label">dbt</span>
           </div>
-          <span class="node-label">dbt</span>
         </div>
+
       </div>
+    </section>
 
-    </div>
-  </section>
+    <!-- ==================== SLIDE 2 : Snowflake Stored Procs vs dbt ==================== -->
+    <section class="slide" role="group" aria-label="Snowflake Stored Procs vs dbt" style="order: 3;">
+      <div class="option-slide-wrap">
+        <div class="option-header">
+          <h2>Snowflake Stored Procs <span>vs</span> dbt</h2>
+          <p>Same transformation outcome, very different amount of framework overhead</p>
+        </div>
 
-  <!-- ==================== SLIDE 2 : Snowflake Stored Procs vs dbt ==================== -->
-  <section class="slide" role="group" aria-label="Snowflake Stored Procs vs dbt">
-    <div class="comparison">
-      <div class="comparison-header">
-        <h2>Snowflake Stored Procs <span>vs</span> dbt</h2>
+        <div class="option-card chips-card">
+          <div class="chip-stack">
+            <div class="chip-row tradeoff">
+              <span class="chip-label">Boilerplate</span>
+              <p>Stored procedures require wrapper code and manual row handling.</p>
+            </div>
+
+            <div class="chip-row neat">
+              <span class="chip-label">Focus</span>
+              <p>dbt models stay focused on transformation SQL and business logic.</p>
+            </div>
+
+            <div class="chip-row constraint">
+              <span class="chip-label">Testing gap</span>
+              <p>SP pipelines lack built-in tests, so teams maintain custom data-quality checks.</p>
+            </div>
+
+            <div class="chip-row cost">
+              <span class="chip-label">Run complexity</span>
+              <p>SP pipelines often need custom chaining and retries; dbt provides DAG-native execution.</p>
+            </div>
+          </div>
+        </div>
+        <div class="so-what">Developers waste ~60% of their SP effort on plumbing that dbt handles automatically.</div>
       </div>
+    </section>
 
-      <!-- Native card -->
-      <div class="compare-card native-card">
-        <div class="card-header">
-          <img src="https://cdn.simpleicons.org/snowflake/29B5E8" alt="Snowflake logo">
-          <h3 class="accent-amber">Snowflake Stored Procedures</h3>
+    <!-- ==================== CODE COMPARE: Stored Procs vs dbt ==================== -->
+    <section class="slide" role="group" aria-label="SP Code Compare" style="order: 2;">
+      <div class="code-comparison">
+        <div class="code-comparison-header">
+          <h2>The Code: <span class="accent-amber">Stored Proc</span> vs <span class="accent-teal">dbt</span></h2>
+          <p>Building <code>stg_orders</code> &mdash; same transformation, different overhead</p>
         </div>
-        <div class="pros-cons">
-          <h4 class="pro-label">Pros</h4>
-          <ul class="pro-list">
-            <li>Placeholder pro #1 - runs entirely inside Snowflake</li>
-            <li>Placeholder pro #2 - fine-grained procedural control</li>
-            <li>Placeholder pro #3 - no external tooling required</li>
-          </ul>
-          <h4 class="con-label">Cons</h4>
-          <ul class="con-list">
-            <li>Placeholder con #1 - verbose SQL/JavaScript mix</li>
-            <li>Placeholder con #2 - harder to test and version</li>
-            <li>Placeholder con #3 - manual dependency management</li>
-          </ul>
-        </div>
-      </div>
 
-      <!-- dbt card -->
-      <div class="compare-card dbt-card">
-        <div class="card-header">
-          <svg viewBox="0 0 24 24" fill="none"><path fill="#ffffff" d="M15.613875 8.90125v6.124425h-1.241175v-0.624625c-0.1298 0.219025 -0.3163 0.3975 -0.543475 0.51105 -0.24335 0.121675 -0.519175 0.186575 -0.7949 0.186575 -0.340725 0.008125 -0.68145 -0.089225 -0.96535 -0.283925 -0.291975 -0.194675 -0.51915 -0.46235 -0.6652 -0.778725 -0.1622 -0.365025 -0.243325 -0.7544 -0.23525 -1.151875 -0.008075 -0.397475 0.07305 -0.78685 0.23525 -1.14375 0.14605 -0.308275 0.373225 -0.57595 0.657125 -0.762525 0.291975 -0.186575 0.6327 -0.2758 0.973425 -0.2677 0.26765 0 0.5353 0.0568 0.770575 0.178475 0.227175 0.11355 0.4137 0.2839 0.543475 0.494825v-2.068525l1.2655 -0.4137Zm-1.492575 4.915775c0.162175 -0.210925 0.2514 -0.519175 0.2514 -0.91665 0 -0.397475 -0.08105 -0.697625 -0.2514 -0.908525 -0.170375 -0.2109 -0.438125 -0.332575 -0.71385 -0.324475 -0.275825 -0.016225 -0.543475 0.10545 -0.722025 0.316375 -0.17025 0.2109 -0.259575 0.51105 -0.259575 0.9004 0 0.397475 0.089325 0.705725 0.259575 0.92475 0.170375 0.219025 0.4462 0.3407 0.722025 0.3326 0.308225 0 0.55155 -0.113575 0.71385 -0.324475Zm5.929775 -2.84725c0.291975 0.18655 0.51915 0.45425 0.657025 0.7625 0.162175 0.356925 0.243325 0.746275 0.23525 1.143775 0.008075 0.397475 -0.073075 0.79495 -0.23525 1.151875 -0.14605 0.31635 -0.373125 0.58405 -0.6652 0.778725 -0.2839 0.186575 -0.624625 0.283925 -0.96525 0.2758 -0.275825 0.008125 -0.551675 -0.056775 -0.795 -0.186575 -0.227075 -0.11355 -0.4137 -0.292025 -0.5354 -0.511025v0.6327h-1.24915V9.31495l1.257325 -0.4137v2.498425c0.1216 -0.219 0.308225 -0.397475 0.5353 -0.511025 0.243425 -0.1298 0.5111 -0.194675 0.786925 -0.186575 0.340625 -0.0081 0.68135 0.089225 0.973425 0.2677Zm-0.61655 2.839125c0.17035 -0.219025 0.2515 -0.527275 0.2515 -0.93285 0 -0.389375 -0.08115 -0.689525 -0.2515 -0.900425 -0.170375 -0.2109 -0.405625 -0.31635 -0.71385 -0.31635 -0.275725 -0.016225 -0.543475 0.10545 -0.721925 0.324475 -0.17035 0.219 -0.2515 0.51915 -0.2515 0.908525 0 0.397475 0.08115 0.705725 0.2515 0.916625 0.170375 0.219025 0.438025 0.3407 0.721925 0.324475 0.275825 0.016225 0.543475 -0.10545 0.71385 -0.324475Zm3.24475 -2.0604v1.638575c0 0.23525 0.0649 0.4056 0.178525 0.51105 0.1298 0.113575 0.300075 0.17035 0.4786 0.16225 0.137875 0 0.2839 -0.02435 0.4137 -0.0568v0.973425c-0.235275 0.081125 -0.4786 0.121675 -0.722025 0.113575 -0.519075 0 -0.9166 -0.146025 -1.19245 -0.43805 -0.275725 -0.292025 -0.413675 -0.705725 -0.413675 -1.2411V9.817875l1.257325 -0.405575v1.395225h1.070825v0.940975h-1.070825Z" stroke-width="0.25"/><path fill="#ff694a" d="M8.840425 7.8873c0.2109 0.2028 0.3488 0.4705 0.38125 0.762525 0 0.121675 -0.03245 0.2028 -0.10545 0.3569 -0.073 0.154125 -0.973425 1.7116 -1.2411 2.141525 -0.154125 0.251475 -0.23525 0.551625 -0.23525 0.843625 0 0.30015 0.081125 0.592175 0.23525 0.84365 0.267675 0.429925 1.1681 1.9955 1.2411 2.149625 0.073 0.154125 0.10545 0.227125 0.10545 0.3488 -0.03245 0.292025 -0.16225 0.559725 -0.37315 0.7544 -0.2028 0.2109 -0.470475 0.348825 -0.7544 0.37315 -0.121675 0 -0.2028 -0.03245 -0.3488 -0.10545 -0.146025 -0.073025 -1.735925 -0.9491 -2.16585 -1.216775 -0.03245 -0.016225 -0.0649 -0.040575 -0.10545 -0.0568l-2.1253 -1.257325c0.04865 0.4056 0.227125 0.794975 0.51915 1.078875 0.056775 0.056775 0.113575 0.10545 0.17845 0.154125 -0.048675 0.024325 -0.10545 0.048675 -0.154125 0.081125 -0.429925 0.267675 -1.9955 1.1681 -2.1496225 1.2411 -0.1541225 0.073 -0.2271325 0.10545 -0.3569225 0.10545 -0.292025 -0.03245 -0.559715 -0.162225 -0.7544 -0.373125 -0.2109075 -0.2028 -0.3488075 -0.4705 -0.381255 -0.762525 0.0081125 -0.121675 0.04056 -0.24335 0.105455 -0.3488 0.073005 -0.154125 0.9734175 -1.719725 1.2411025 -2.14965 0.154135 -0.25145 0.2352475 -0.543475 0.2352475 -0.843625 0 -0.300125 -0.0811125 -0.59215 -0.2352475 -0.843625 -0.267685 -0.44615 -1.17621 -2.011725 -1.2411025 -2.16585 -0.064895 -0.10545 -0.0973425 -0.227125 -0.105455 -0.3488 0.0324475 -0.292025 0.1622375 -0.559725 0.373145 -0.762525 0.202795 -0.2109 0.470485 -0.3407 0.76251 -0.37315 0.121675 0.008125 0.24335 0.040575 0.3569225 0.105475 0.12979 0.056775 1.2735475 0.72195 1.8819475 1.078875l0.1379 0.0811c0.04865 0.03245 0.089225 0.056775 0.121675 0.073025l0.0649 0.04055 2.16585 1.281675c-0.048675 -0.486725 -0.30015 -0.932875 -0.6895 -1.233 0.048675 -0.02435 0.10545 -0.048675 0.154125 -0.081125 0.429925 -0.2677 1.9955 -1.176225 2.149625 -1.2411 0.10545 -0.0649 0.227125 -0.09735 0.356925 -0.105475 0.2839 0.03245 0.5516 0.16225 0.7544 0.37315ZM4.8494 12.57595l0.462375 -0.4624c0.0649 -0.064875 0.0649 -0.162225 0 -0.227125l-0.462375 -0.462375c-0.0649 -0.0649 -0.162225 -0.0649 -0.227125 0l-0.462375 0.462375c-0.0649 0.0649 -0.0649 0.16225 0 0.227125l0.462375 0.4624c0.056775 0.056775 0.162225 0.056775 0.227125 0Z" stroke-width="0.25"/></svg>
-          <h3 class="accent-teal">dbt</h3>
-        </div>
-        <div class="pros-cons">
-          <h4 class="pro-label">Pros</h4>
-          <ul class="pro-list">
-            <li>Placeholder pro #1 - declarative SQL models</li>
-            <li>Placeholder pro #2 - built-in testing framework</li>
-            <li>Placeholder pro #3 - automatic DAG resolution</li>
-          </ul>
-          <h4 class="con-label">Cons</h4>
-          <ul class="con-list">
-            <li>Placeholder con #1 - additional tool to learn</li>
-            <li>Placeholder con #2 - limited procedural logic</li>
-            <li>Placeholder con #3 - requires external orchestration</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ==================== CODE COMPARE: Stored Procs vs dbt ==================== -->
-  <section class="slide" role="group" aria-label="SP Code Compare">
-    <div class="code-comparison">
-      <div class="code-comparison-header">
-        <h2>The Code: <span class="accent-amber">Stored Proc</span> vs <span class="accent-teal">dbt</span></h2>
-        <p>Building <code>stg_orders</code> &mdash; same transformation, different overhead</p>
-      </div>
-
-      <!-- Native: Stored Procedure -->
-      <div class="code-panel native-panel">
-        <div class="code-panel-header">
-          <h3 class="accent-amber">Snowflake Stored Procedure</h3>
-        </div>
-        <div class="code-block">
-<pre><span class="cm">-- sp_enrich_orders.sql  (118 lines)</span>
+        <!-- Native: Stored Procedure -->
+        <div class="code-panel native-panel">
+          <div class="code-panel-header">
+            <h3 class="accent-amber">Snowflake Stored Procedure</h3>
+          </div>
+          <div class="code-block">
+            <pre><span class="cm">-- sp_enrich_orders.sql  (118 lines)</span>
 <span class="kw">CREATE OR REPLACE PROCEDURE</span> sp_enrich_orders()
 <span class="kw">RETURNS</span> <span class="ty">VARCHAR</span>
 <span class="kw">LANGUAGE</span> SQL
@@ -798,20 +1381,21 @@ li { margin-bottom: .45em; }
     <span class="kw">RETURN</span> <span class="str">'SUCCESS: '</span> || v_rows_inserted;
 <span class="kw">END</span>;
 $$;</pre>
+          </div>
+          <div class="code-metric amber">
+            <span class="metric-number">~120</span>
+            <span class="metric-label">lines &mdash; DDL wrapper, DECLARE, INSERT INTO column list, manual row
+              counting</span>
+          </div>
         </div>
-        <div class="code-metric amber">
-          <span class="metric-number">~120</span>
-          <span class="metric-label">lines &mdash; DDL wrapper, DECLARE, INSERT INTO column list, manual row counting</span>
-        </div>
-      </div>
 
-      <!-- dbt -->
-      <div class="code-panel dbt-panel">
-        <div class="code-panel-header">
-          <h3 class="accent-teal">dbt Model</h3>
-        </div>
-        <div class="code-block">
-<pre><span class="cm">-- models/staging/stg_orders.sql</span>
+        <!-- dbt -->
+        <div class="code-panel dbt-panel">
+          <div class="code-panel-header">
+            <h3 class="accent-teal">dbt Model</h3>
+          </div>
+          <div class="code-block">
+            <pre><span class="cm">-- models/staging/stg_orders.sql</span>
 
 <span class="kw">with</span> source <span class="kw">as</span> (
     <span class="kw">select</span> * <span class="kw">from</span> {{ <span class="fn">source</span>(<span class="str">'raw'</span>, <span class="str">'orders'</span>) }}
@@ -836,83 +1420,66 @@ staged <span class="kw">as</span> (
 )
 
 <span class="kw">select</span> * <span class="kw">from</span> staged</pre>
-        </div>
-        <div class="code-metric teal">
-          <span class="metric-number">~40</span>
-          <span class="metric-label">lines &mdash; pure business logic. dbt handles DDL, execution &amp; logging.</span>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ==================== SLIDE 3 : Databricks Notebooks vs dbt ==================== -->
-  <section class="slide" role="group" aria-label="Databricks Notebooks vs dbt">
-    <div class="comparison">
-      <div class="comparison-header">
-        <h2>Databricks Notebooks <span>vs</span> dbt</h2>
-      </div>
-
-      <!-- Native card -->
-      <div class="compare-card native-card">
-        <div class="card-header">
-          <img src="https://cdn.simpleicons.org/databricks/FF3621" alt="Databricks logo">
-          <h3 class="accent-amber">Databricks Notebooks</h3>
-        </div>
-        <div class="pros-cons">
-          <h4 class="pro-label">Pros</h4>
-          <ul class="pro-list">
-            <li>Placeholder pro #1 - full PySpark flexibility</li>
-            <li>Placeholder pro #2 - interactive development</li>
-            <li>Placeholder pro #3 - rich visualization built-in</li>
-          </ul>
-          <h4 class="con-label">Cons</h4>
-          <ul class="con-list">
-            <li>Placeholder con #1 - manual orchestration required</li>
-            <li>Placeholder con #2 - 65+ notebooks to maintain</li>
-            <li>Placeholder con #3 - testing is ad-hoc</li>
-          </ul>
+          </div>
+          <div class="code-metric teal">
+            <span class="metric-number">~40</span>
+            <span class="metric-label">lines &mdash; pure business logic. dbt handles DDL, execution &amp;
+              logging.</span>
+          </div>
         </div>
       </div>
+    </section>
 
-      <!-- dbt card -->
-      <div class="compare-card dbt-card">
-        <div class="card-header">
-          <svg viewBox="0 0 24 24" fill="none"><path fill="#ffffff" d="M15.613875 8.90125v6.124425h-1.241175v-0.624625c-0.1298 0.219025 -0.3163 0.3975 -0.543475 0.51105 -0.24335 0.121675 -0.519175 0.186575 -0.7949 0.186575 -0.340725 0.008125 -0.68145 -0.089225 -0.96535 -0.283925 -0.291975 -0.194675 -0.51915 -0.46235 -0.6652 -0.778725 -0.1622 -0.365025 -0.243325 -0.7544 -0.23525 -1.151875 -0.008075 -0.397475 0.07305 -0.78685 0.23525 -1.14375 0.14605 -0.308275 0.373225 -0.57595 0.657125 -0.762525 0.291975 -0.186575 0.6327 -0.2758 0.973425 -0.2677 0.26765 0 0.5353 0.0568 0.770575 0.178475 0.227175 0.11355 0.4137 0.2839 0.543475 0.494825v-2.068525l1.2655 -0.4137Zm-1.492575 4.915775c0.162175 -0.210925 0.2514 -0.519175 0.2514 -0.91665 0 -0.397475 -0.08105 -0.697625 -0.2514 -0.908525 -0.170375 -0.2109 -0.438125 -0.332575 -0.71385 -0.324475 -0.275825 -0.016225 -0.543475 0.10545 -0.722025 0.316375 -0.17025 0.2109 -0.259575 0.51105 -0.259575 0.9004 0 0.397475 0.089325 0.705725 0.259575 0.92475 0.170375 0.219025 0.4462 0.3407 0.722025 0.3326 0.308225 0 0.55155 -0.113575 0.71385 -0.324475Zm5.929775 -2.84725c0.291975 0.18655 0.51915 0.45425 0.657025 0.7625 0.162175 0.356925 0.243325 0.746275 0.23525 1.143775 0.008075 0.397475 -0.073075 0.79495 -0.23525 1.151875 -0.14605 0.31635 -0.373125 0.58405 -0.6652 0.778725 -0.2839 0.186575 -0.624625 0.283925 -0.96525 0.2758 -0.275825 0.008125 -0.551675 -0.056775 -0.795 -0.186575 -0.227075 -0.11355 -0.4137 -0.292025 -0.5354 -0.511025v0.6327h-1.24915V9.31495l1.257325 -0.4137v2.498425c0.1216 -0.219 0.308225 -0.397475 0.5353 -0.511025 0.243425 -0.1298 0.5111 -0.194675 0.786925 -0.186575 0.340625 -0.0081 0.68135 0.089225 0.973425 0.2677Zm-0.61655 2.839125c0.17035 -0.219025 0.2515 -0.527275 0.2515 -0.93285 0 -0.389375 -0.08115 -0.689525 -0.2515 -0.900425 -0.170375 -0.2109 -0.405625 -0.31635 -0.71385 -0.31635 -0.275725 -0.016225 -0.543475 0.10545 -0.721925 0.324475 -0.17035 0.219 -0.2515 0.51915 -0.2515 0.908525 0 0.397475 0.08115 0.705725 0.2515 0.916625 0.170375 0.219025 0.438025 0.3407 0.721925 0.324475 0.275825 0.016225 0.543475 -0.10545 0.71385 -0.324475Zm3.24475 -2.0604v1.638575c0 0.23525 0.0649 0.4056 0.178525 0.51105 0.1298 0.113575 0.300075 0.17035 0.4786 0.16225 0.137875 0 0.2839 -0.02435 0.4137 -0.0568v0.973425c-0.235275 0.081125 -0.4786 0.121675 -0.722025 0.113575 -0.519075 0 -0.9166 -0.146025 -1.19245 -0.43805 -0.275725 -0.292025 -0.413675 -0.705725 -0.413675 -1.2411V9.817875l1.257325 -0.405575v1.395225h1.070825v0.940975h-1.070825Z" stroke-width="0.25"/><path fill="#ff694a" d="M8.840425 7.8873c0.2109 0.2028 0.3488 0.4705 0.38125 0.762525 0 0.121675 -0.03245 0.2028 -0.10545 0.3569 -0.073 0.154125 -0.973425 1.7116 -1.2411 2.141525 -0.154125 0.251475 -0.23525 0.551625 -0.23525 0.843625 0 0.30015 0.081125 0.592175 0.23525 0.84365 0.267675 0.429925 1.1681 1.9955 1.2411 2.149625 0.073 0.154125 0.10545 0.227125 0.10545 0.3488 -0.03245 0.292025 -0.16225 0.559725 -0.37315 0.7544 -0.2028 0.2109 -0.470475 0.348825 -0.7544 0.37315 -0.121675 0 -0.2028 -0.03245 -0.3488 -0.10545 -0.146025 -0.073025 -1.735925 -0.9491 -2.16585 -1.216775 -0.03245 -0.016225 -0.0649 -0.040575 -0.10545 -0.0568l-2.1253 -1.257325c0.04865 0.4056 0.227125 0.794975 0.51915 1.078875 0.056775 0.056775 0.113575 0.10545 0.17845 0.154125 -0.048675 0.024325 -0.10545 0.048675 -0.154125 0.081125 -0.429925 0.267675 -1.9955 1.1681 -2.1496225 1.2411 -0.1541225 0.073 -0.2271325 0.10545 -0.3569225 0.10545 -0.292025 -0.03245 -0.559715 -0.162225 -0.7544 -0.373125 -0.2109075 -0.2028 -0.3488075 -0.4705 -0.381255 -0.762525 0.0081125 -0.121675 0.04056 -0.24335 0.105455 -0.3488 0.073005 -0.154125 0.9734175 -1.719725 1.2411025 -2.14965 0.154135 -0.25145 0.2352475 -0.543475 0.2352475 -0.843625 0 -0.300125 -0.0811125 -0.59215 -0.2352475 -0.843625 -0.267685 -0.44615 -1.17621 -2.011725 -1.2411025 -2.16585 -0.064895 -0.10545 -0.0973425 -0.227125 -0.105455 -0.3488 0.0324475 -0.292025 0.1622375 -0.559725 0.373145 -0.762525 0.202795 -0.2109 0.470485 -0.3407 0.76251 -0.37315 0.121675 0.008125 0.24335 0.040575 0.3569225 0.105475 0.12979 0.056775 1.2735475 0.72195 1.8819475 1.078875l0.1379 0.0811c0.04865 0.03245 0.089225 0.056775 0.121675 0.073025l0.0649 0.04055 2.16585 1.281675c-0.048675 -0.486725 -0.30015 -0.932875 -0.6895 -1.233 0.048675 -0.02435 0.10545 -0.048675 0.154125 -0.081125 0.429925 -0.2677 1.9955 -1.176225 2.149625 -1.2411 0.10545 -0.0649 0.227125 -0.09735 0.356925 -0.105475 0.2839 0.03245 0.5516 0.16225 0.7544 0.37315ZM4.8494 12.57595l0.462375 -0.4624c0.0649 -0.064875 0.0649 -0.162225 0 -0.227125l-0.462375 -0.462375c-0.0649 -0.0649 -0.162225 -0.0649 -0.227125 0l-0.462375 0.462375c-0.0649 0.0649 -0.0649 0.16225 0 0.227125l0.462375 0.4624c0.056775 0.056775 0.162225 0.056775 0.227125 0Z" stroke-width="0.25"/></svg>
-          <h3 class="accent-teal">dbt</h3>
+    <!-- ==================== SLIDE 3 : Databricks Notebooks vs dbt ==================== -->
+    <section class="slide" role="group" aria-label="Databricks Notebooks vs dbt" style="order: 5;">
+      <div class="option-slide-wrap">
+        <div class="option-header">
+          <h2>Databricks Notebooks <span>vs</span> dbt</h2>
+          <p>Same transformation outcome, very different debugging workflow.</p>
         </div>
-        <div class="pros-cons">
-          <h4 class="pro-label">Pros</h4>
-          <ul class="pro-list">
-            <li>Placeholder pro #1 - single SELECT per model</li>
-            <li>Placeholder pro #2 - Jinja macros for DRY code</li>
-            <li>Placeholder pro #3 - documentation auto-generated</li>
-          </ul>
-          <h4 class="con-label">Cons</h4>
-          <ul class="con-list">
-            <li>Placeholder con #1 - SQL-only transformations</li>
-            <li>Placeholder con #2 - Spark-specific features unavailable</li>
-            <li>Placeholder con #3 - separate scheduling layer needed</li>
-          </ul>
+
+        <div class="option-card chips-card">
+          <div class="chip-stack">
+            <div class="chip-row tradeoff">
+              <span class="chip-label">Failure signal</span>
+              <p>Notebook jobs often fail in a top runner script, not where the original bug first started.</p>
+            </div>
+
+            <div class="chip-row constraint">
+              <span class="chip-label">Root cause path</span>
+              <p>Teams typically trace through <code>%run</code> chains and layer runners before finding the true issue.</p>
+            </div>
+
+            <div class="chip-row neat">
+              <span class="chip-label">Lineage view</span>
+              <p>dbt graphs show upstream and downstream dependencies directly, which makes impact analysis faster.</p>
+            </div>
+
+            <div class="chip-row cost">
+              <span class="chip-label">Time to fix</span>
+              <p>Notebook debugging can mean repeated context switching; dbt keeps the path model-centric.</p>
+            </div>
+          </div>
         </div>
+        <div class="so-what">A 10-minute fix becomes a multi-hour investigation when errors surface 3 files from the root cause.</div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- ==================== CODE COMPARE: Notebooks vs dbt ==================== -->
-  <section class="slide" role="group" aria-label="Notebook Code Compare">
-    <div class="code-comparison">
-      <div class="code-comparison-header">
-        <h2>The Code: <span class="accent-amber">Notebook</span> vs <span class="accent-teal">dbt</span></h2>
-        <p>Building <code>stg_orders</code> &mdash; same transformation, different paradigm</p>
-      </div>
-
-      <!-- Native: Databricks Notebook -->
-      <div class="code-panel native-panel">
-        <div class="code-panel-header">
-          <h3 class="accent-amber">Databricks Notebook</h3>
+    <!-- ==================== CODE COMPARE: Notebooks vs dbt ==================== -->
+    <section class="slide" role="group" aria-label="Notebook Code Compare" style="order: 4;">
+      <div class="code-comparison">
+        <div class="code-comparison-header">
+          <h2>The Code: <span class="accent-amber">Notebook</span> vs <span class="accent-teal">dbt</span></h2>
+          <p>Building <code>stg_orders</code> &mdash; same transformation, different paradigm</p>
         </div>
-        <div class="code-block">
-<pre><span class="cm"># stg_orders.py  (83 lines, 7 cells)</span>
+
+        <!-- Native: Databricks Notebook -->
+        <div class="code-panel native-panel">
+          <div class="code-panel-header">
+            <h3 class="accent-amber">Databricks Notebook</h3>
+          </div>
+          <div class="code-block">
+            <pre><span class="cm"># stg_orders.py  (83 lines, 7 cells)</span>
 <span class="cm"># MAGIC %run ../../config</span>
 
 <span class="kw">from</span> pyspark.sql.functions <span class="kw">import</span> (
@@ -944,20 +1511,20 @@ staged.write \
     .option(<span class="str">"overwriteSchema"</span>, <span class="str">"true"</span>) \
     .saveAsTable(table_name)
 <span class="fn">print</span>(<span class="str">f"Written {staged.count()} rows"</span>)</pre>
+          </div>
+          <div class="code-metric amber">
+            <span class="metric-number">83</span>
+            <span class="metric-label">lines &mdash; Python imports, PySpark API, manual write, format config</span>
+          </div>
         </div>
-        <div class="code-metric amber">
-          <span class="metric-number">83</span>
-          <span class="metric-label">lines &mdash; Python imports, PySpark API, manual write, format config</span>
-        </div>
-      </div>
 
-      <!-- dbt -->
-      <div class="code-panel dbt-panel">
-        <div class="code-panel-header">
-          <h3 class="accent-teal">dbt Model</h3>
-        </div>
-        <div class="code-block">
-<pre><span class="cm">-- models/staging/stg_orders.sql</span>
+        <!-- dbt -->
+        <div class="code-panel dbt-panel">
+          <div class="code-panel-header">
+            <h3 class="accent-teal">dbt Model</h3>
+          </div>
+          <div class="code-block">
+            <pre><span class="cm">-- models/staging/stg_orders.sql</span>
 
 <span class="kw">with</span> source <span class="kw">as</span> (
     <span class="kw">select</span> * <span class="kw">from</span> {{ <span class="fn">source</span>(<span class="str">'raw'</span>, <span class="str">'orders'</span>) }}
@@ -982,83 +1549,65 @@ staged <span class="kw">as</span> (
 )
 
 <span class="kw">select</span> * <span class="kw">from</span> staged</pre>
-        </div>
-        <div class="code-metric teal">
-          <span class="metric-number">~40</span>
-          <span class="metric-label">lines &mdash; no imports, no write logic. Just SQL that anyone can read.</span>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ==================== SLIDE 4 : Databricks DLT vs dbt ==================== -->
-  <section class="slide" role="group" aria-label="Databricks DLT vs dbt">
-    <div class="comparison">
-      <div class="comparison-header">
-        <h2>Databricks DLT <span>vs</span> dbt</h2>
-      </div>
-
-      <!-- Native card -->
-      <div class="compare-card native-card">
-        <div class="card-header">
-          <img src="https://cdn.simpleicons.org/databricks/FF3621" alt="Databricks logo">
-          <h3 class="accent-amber">Delta Live Tables</h3>
-        </div>
-        <div class="pros-cons">
-          <h4 class="pro-label">Pros</h4>
-          <ul class="pro-list">
-            <li>Placeholder pro #1 - declarative like dbt but PySpark</li>
-            <li>Placeholder pro #2 - built-in data quality expectations</li>
-            <li>Placeholder pro #3 - only 7 notebooks vs 65+</li>
-          </ul>
-          <h4 class="con-label">Cons</h4>
-          <ul class="con-list">
-            <li>Placeholder con #1 - Databricks vendor lock-in</li>
-            <li>Placeholder con #2 - limited community ecosystem</li>
-            <li>Placeholder con #3 - newer, less battle-tested</li>
-          </ul>
+          </div>
+          <div class="code-metric teal">
+            <span class="metric-number">~40</span>
+            <span class="metric-label">lines &mdash; no imports, no write logic. Just SQL that anyone can read.</span>
+          </div>
         </div>
       </div>
+    </section>
 
-      <!-- dbt card -->
-      <div class="compare-card dbt-card">
-        <div class="card-header">
-          <svg viewBox="0 0 24 24" fill="none"><path fill="#ffffff" d="M15.613875 8.90125v6.124425h-1.241175v-0.624625c-0.1298 0.219025 -0.3163 0.3975 -0.543475 0.51105 -0.24335 0.121675 -0.519175 0.186575 -0.7949 0.186575 -0.340725 0.008125 -0.68145 -0.089225 -0.96535 -0.283925 -0.291975 -0.194675 -0.51915 -0.46235 -0.6652 -0.778725 -0.1622 -0.365025 -0.243325 -0.7544 -0.23525 -1.151875 -0.008075 -0.397475 0.07305 -0.78685 0.23525 -1.14375 0.14605 -0.308275 0.373225 -0.57595 0.657125 -0.762525 0.291975 -0.186575 0.6327 -0.2758 0.973425 -0.2677 0.26765 0 0.5353 0.0568 0.770575 0.178475 0.227175 0.11355 0.4137 0.2839 0.543475 0.494825v-2.068525l1.2655 -0.4137Zm-1.492575 4.915775c0.162175 -0.210925 0.2514 -0.519175 0.2514 -0.91665 0 -0.397475 -0.08105 -0.697625 -0.2514 -0.908525 -0.170375 -0.2109 -0.438125 -0.332575 -0.71385 -0.324475 -0.275825 -0.016225 -0.543475 0.10545 -0.722025 0.316375 -0.17025 0.2109 -0.259575 0.51105 -0.259575 0.9004 0 0.397475 0.089325 0.705725 0.259575 0.92475 0.170375 0.219025 0.4462 0.3407 0.722025 0.3326 0.308225 0 0.55155 -0.113575 0.71385 -0.324475Zm5.929775 -2.84725c0.291975 0.18655 0.51915 0.45425 0.657025 0.7625 0.162175 0.356925 0.243325 0.746275 0.23525 1.143775 0.008075 0.397475 -0.073075 0.79495 -0.23525 1.151875 -0.14605 0.31635 -0.373125 0.58405 -0.6652 0.778725 -0.2839 0.186575 -0.624625 0.283925 -0.96525 0.2758 -0.275825 0.008125 -0.551675 -0.056775 -0.795 -0.186575 -0.227075 -0.11355 -0.4137 -0.292025 -0.5354 -0.511025v0.6327h-1.24915V9.31495l1.257325 -0.4137v2.498425c0.1216 -0.219 0.308225 -0.397475 0.5353 -0.511025 0.243425 -0.1298 0.5111 -0.194675 0.786925 -0.186575 0.340625 -0.0081 0.68135 0.089225 0.973425 0.2677Zm-0.61655 2.839125c0.17035 -0.219025 0.2515 -0.527275 0.2515 -0.93285 0 -0.389375 -0.08115 -0.689525 -0.2515 -0.900425 -0.170375 -0.2109 -0.405625 -0.31635 -0.71385 -0.31635 -0.275725 -0.016225 -0.543475 0.10545 -0.721925 0.324475 -0.17035 0.219 -0.2515 0.51915 -0.2515 0.908525 0 0.397475 0.08115 0.705725 0.2515 0.916625 0.170375 0.219025 0.438025 0.3407 0.721925 0.324475 0.275825 0.016225 0.543475 -0.10545 0.71385 -0.324475Zm3.24475 -2.0604v1.638575c0 0.23525 0.0649 0.4056 0.178525 0.51105 0.1298 0.113575 0.300075 0.17035 0.4786 0.16225 0.137875 0 0.2839 -0.02435 0.4137 -0.0568v0.973425c-0.235275 0.081125 -0.4786 0.121675 -0.722025 0.113575 -0.519075 0 -0.9166 -0.146025 -1.19245 -0.43805 -0.275725 -0.292025 -0.413675 -0.705725 -0.413675 -1.2411V9.817875l1.257325 -0.405575v1.395225h1.070825v0.940975h-1.070825Z" stroke-width="0.25"/><path fill="#ff694a" d="M8.840425 7.8873c0.2109 0.2028 0.3488 0.4705 0.38125 0.762525 0 0.121675 -0.03245 0.2028 -0.10545 0.3569 -0.073 0.154125 -0.973425 1.7116 -1.2411 2.141525 -0.154125 0.251475 -0.23525 0.551625 -0.23525 0.843625 0 0.30015 0.081125 0.592175 0.23525 0.84365 0.267675 0.429925 1.1681 1.9955 1.2411 2.149625 0.073 0.154125 0.10545 0.227125 0.10545 0.3488 -0.03245 0.292025 -0.16225 0.559725 -0.37315 0.7544 -0.2028 0.2109 -0.470475 0.348825 -0.7544 0.37315 -0.121675 0 -0.2028 -0.03245 -0.3488 -0.10545 -0.146025 -0.073025 -1.735925 -0.9491 -2.16585 -1.216775 -0.03245 -0.016225 -0.0649 -0.040575 -0.10545 -0.0568l-2.1253 -1.257325c0.04865 0.4056 0.227125 0.794975 0.51915 1.078875 0.056775 0.056775 0.113575 0.10545 0.17845 0.154125 -0.048675 0.024325 -0.10545 0.048675 -0.154125 0.081125 -0.429925 0.267675 -1.9955 1.1681 -2.1496225 1.2411 -0.1541225 0.073 -0.2271325 0.10545 -0.3569225 0.10545 -0.292025 -0.03245 -0.559715 -0.162225 -0.7544 -0.373125 -0.2109075 -0.2028 -0.3488075 -0.4705 -0.381255 -0.762525 0.0081125 -0.121675 0.04056 -0.24335 0.105455 -0.3488 0.073005 -0.154125 0.9734175 -1.719725 1.2411025 -2.14965 0.154135 -0.25145 0.2352475 -0.543475 0.2352475 -0.843625 0 -0.300125 -0.0811125 -0.59215 -0.2352475 -0.843625 -0.267685 -0.44615 -1.17621 -2.011725 -1.2411025 -2.16585 -0.064895 -0.10545 -0.0973425 -0.227125 -0.105455 -0.3488 0.0324475 -0.292025 0.1622375 -0.559725 0.373145 -0.762525 0.202795 -0.2109 0.470485 -0.3407 0.76251 -0.37315 0.121675 0.008125 0.24335 0.040575 0.3569225 0.105475 0.12979 0.056775 1.2735475 0.72195 1.8819475 1.078875l0.1379 0.0811c0.04865 0.03245 0.089225 0.056775 0.121675 0.073025l0.0649 0.04055 2.16585 1.281675c-0.048675 -0.486725 -0.30015 -0.932875 -0.6895 -1.233 0.048675 -0.02435 0.10545 -0.048675 0.154125 -0.081125 0.429925 -0.2677 1.9955 -1.176225 2.149625 -1.2411 0.10545 -0.0649 0.227125 -0.09735 0.356925 -0.105475 0.2839 0.03245 0.5516 0.16225 0.7544 0.37315ZM4.8494 12.57595l0.462375 -0.4624c0.0649 -0.064875 0.0649 -0.162225 0 -0.227125l-0.462375 -0.462375c-0.0649 -0.0649 -0.162225 -0.0649 -0.227125 0l-0.462375 0.462375c-0.0649 0.0649 -0.0649 0.16225 0 0.227125l0.462375 0.4624c0.056775 0.056775 0.162225 0.056775 0.227125 0Z" stroke-width="0.25"/></svg>
-          <h3 class="accent-teal">dbt</h3>
+    <!-- ==================== SLIDE : DLT vs dbt ==================== -->
+    <section class="slide" role="group" aria-label="Databricks DLT vs dbt" style="order: 7;">
+      <div class="option-slide-wrap">
+        <div class="option-header">
+          <h2>Databricks DLT <span>vs</span> dbt</h2>
+          <p>Quick takeaways from using DLT in practice</p>
         </div>
-        <div class="pros-cons">
-          <h4 class="pro-label">Pros</h4>
-          <ul class="pro-list">
-            <li>Placeholder pro #1 - platform agnostic</li>
-            <li>Placeholder pro #2 - massive community and packages</li>
-            <li>Placeholder pro #3 - mature testing and docs</li>
-          </ul>
-          <h4 class="con-label">Cons</h4>
-          <ul class="con-list">
-            <li>Placeholder con #1 - no built-in streaming support</li>
-            <li>Placeholder con #2 - requires warehouse compute</li>
-            <li>Placeholder con #3 - steeper initial setup</li>
-          </ul>
+
+        <div class="option-card chips-card">
+          <div class="chip-stack">
+            <div class="chip-row neat">
+              <span class="chip-label">Neat</span>
+              <p>DLT lets teams define models and tests together in a single pipeline flow.</p>
+            </div>
+
+            <div class="chip-row tradeoff">
+              <span class="chip-label">Tradeoff</span>
+              <p>Because it is Python-first, it can be less approachable for less technical users.</p>
+            </div>
+
+            <div class="chip-row constraint">
+              <span class="chip-label">Constraint</span>
+              <p>DLT is Databricks-only, so it reduces platform flexibility.</p>
+            </div>
+
+            <div class="chip-row cost">
+              <span class="chip-label">Cost risk</span>
+              <p>Without careful configuration and run strategy, DLT can become less cost-efficient.</p>
+            </div>
+          </div>
         </div>
+        <div class="so-what">Lock-in compounds: each new pipeline raises the cost of ever moving off Databricks.</div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- ==================== CODE COMPARE: DLT vs dbt ==================== -->
-  <section class="slide" role="group" aria-label="DLT Code Compare">
-    <div class="code-comparison">
-      <div class="code-comparison-header">
-        <h2>The Code: <span class="accent-amber">DLT</span> vs <span class="accent-teal">dbt</span></h2>
-        <p>Building <code>stg_orders</code> &mdash; closest comparison, but key differences</p>
-      </div>
-
-      <!-- Native: Delta Live Tables -->
-      <div class="code-panel native-panel">
-        <div class="code-panel-header">
-          <h3 class="accent-amber">Delta Live Tables</h3>
+    <!-- ==================== CODE COMPARE: DLT vs dbt ==================== -->
+    <section class="slide" role="group" aria-label="DLT Code Compare" style="order: 6;">
+      <div class="code-comparison">
+        <div class="code-comparison-header">
+          <h2>The Code: <span class="accent-amber">DLT</span> vs <span class="accent-teal">dbt</span></h2>
+          <p>Building <code>stg_orders</code> &mdash; closest comparison, but key differences</p>
         </div>
-        <div class="code-block">
-<pre><span class="cm"># dlt/silver/staging.py</span>
+
+        <!-- Native: Delta Live Tables -->
+        <div class="code-panel native-panel">
+          <div class="code-panel-header">
+            <h3 class="accent-amber">Delta Live Tables</h3>
+          </div>
+          <div class="code-block">
+            <pre><span class="cm"># dlt/silver/staging/stg_orders.py</span>
 <span class="kw">import</span> dlt
 <span class="kw">from</span> pyspark.sql.functions <span class="kw">import</span> (
     col, trim, to_date, coalesce, lit
@@ -1092,20 +1641,20 @@ staged <span class="kw">as</span> (
             <span class="cm"># ... more columns ...</span>
         )
     )</pre>
+          </div>
+          <div class="code-metric amber">
+            <span class="metric-number">Python</span>
+            <span class="metric-label">required &mdash; PySpark API, decorators, Databricks-only</span>
+          </div>
         </div>
-        <div class="code-metric amber">
-          <span class="metric-number">Python</span>
-          <span class="metric-label">required &mdash; PySpark API, decorators, Databricks-only</span>
-        </div>
-      </div>
 
-      <!-- dbt -->
-      <div class="code-panel dbt-panel">
-        <div class="code-panel-header">
-          <h3 class="accent-teal">dbt Model + YAML</h3>
-        </div>
-        <div class="code-block">
-<pre><span class="cm">-- models/staging/stg_orders.sql</span>
+        <!-- dbt -->
+        <div class="code-panel dbt-panel">
+          <div class="code-panel-header">
+            <h3 class="accent-teal">dbt Model + YAML</h3>
+          </div>
+          <div class="code-block">
+            <pre><span class="cm">-- models/staging/stg_orders.sql</span>
 <span class="kw">with</span> source <span class="kw">as</span> (
     <span class="kw">select</span> * <span class="kw">from</span> {{ <span class="fn">source</span>(<span class="str">'raw'</span>, <span class="str">'orders'</span>) }}
 ),
@@ -1131,269 +1680,728 @@ staged <span class="kw">as</span> (
 <span class="cm">--         tests: [not_null, unique]</span>
 <span class="cm">--       - name: total_amount</span>
 <span class="cm">--         tests: [not_null]</span></pre>
-        </div>
-        <div class="code-metric teal">
-          <span class="metric-number">SQL</span>
-          <span class="metric-label">only &mdash; tests in YAML, runs on Snowflake, Databricks, BigQuery, etc.</span>
+          </div>
+          <div class="code-metric teal">
+            <span class="metric-number">SQL</span>
+            <span class="metric-label">only &mdash; tests in YAML, runs on Snowflake, Databricks, BigQuery, etc.</span>
+          </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- ==================== SLIDE 5 : Summary ==================== -->
-  <section class="slide" role="group" aria-label="Summary">
-    <div class="summary-wrap">
-      <h2>Side-by-Side <span class="accent-amber">Comparison</span></h2>
+    <!-- ==================== SLIDE 5 : Summary ==================== -->
+    <section class="slide" role="group" aria-label="Summary" style="order: 8;">
+      <div class="summary-wrap">
+        <h2>Key <span class="accent-amber">Takeaways</span></h2>
+        <p class="summary-subhead">Same sandwich data, different operational tradeoffs.</p>
 
-      <div class="summary-grid">
-        <!-- Header row -->
-        <div class="cell header row-label">Aspect</div>
-        <div class="cell header">Snowflake SP</div>
-        <div class="cell header">Notebooks</div>
-        <div class="cell header">DLT</div>
-        <div class="cell header">dbt</div>
+        <ol class="summary-list">
+          <li class="summary-item">
+            <span class="summary-item-label">1</span>
+            <p><strong>Code focus:</strong> dbt keeps models on business logic; native approaches add execution
+              scaffolding.</p>
+          </li>
+          <li class="summary-item">
+            <span class="summary-item-label">2</span>
+            <p><strong>Debugging path:</strong> Native debugging is often multi-hop, so fixes take longer.</p>
+          </li>
+          <li class="summary-item">
+            <span class="summary-item-label">3</span>
+            <p><strong>DLT tradeoff:</strong> You get built-in expectations and pipeline flow, but it is Python-first
+              and Databricks-specific.</p>
+          </li>
+          <li class="summary-item">
+            <span class="summary-item-label">4</span>
+            <p><strong>Decision criteria:</strong> Select based on team capabilities, governance needs, and long-term
+              platform strategy.</p>
+          </li>
+        </ol>
 
-        <!-- Row: Language -->
-        <div class="cell row-label">Language</div>
-        <div class="cell">SQL + JS</div>
-        <div class="cell">PySpark</div>
-        <div class="cell">PySpark</div>
-        <div class="cell">SQL (Jinja)</div>
-
-        <!-- Row: Orchestration -->
-        <div class="cell row-label">Orchestration</div>
-        <div class="cell">Stored Procs</div>
-        <div class="cell">Manual Scripts</div>
-        <div class="cell">Automatic</div>
-        <div class="cell">dbt CLI</div>
-
-        <!-- Row: Data Quality -->
-        <div class="cell row-label">Data Quality</div>
-        <div class="cell">Custom Framework</div>
-        <div class="cell">Test Notebooks</div>
-        <div class="cell">@dlt.expect</div>
-        <div class="cell">dbt tests</div>
-
-        <!-- Row: Files -->
-        <div class="cell row-label">Files / Notebooks</div>
-        <div class="cell">~30 scripts</div>
-        <div class="cell">65+ notebooks</div>
-        <div class="cell">7 notebooks</div>
-        <div class="cell">~25 models</div>
-
-        <!-- Row: Best For -->
-        <div class="cell row-label">Best For</div>
-        <div class="cell">SQL-centric teams</div>
-        <div class="cell">Custom Spark logic</div>
-        <div class="cell">Managed pipelines</div>
-        <div class="cell">Analytics engineers</div>
+        <p class="summary-decision">If your priority is readable SQL plus cross-warehouse portability, dbt is usually
+          the simplest default.</p>
       </div>
+    </section>
 
-      <p class="summary-tagline">"Choose the tool that fits your team -- not the one that sounds the fanciest."</p>
-    </div>
-  </section>
+  </div><!-- /slide-track -->
 
-</div><!-- /slide-track -->
+  <!-- Side navigation arrows -->
+  <button id="nav-prev" class="nav-arrow nav-arrow-left" aria-label="Previous slide">
+    <svg viewBox="0 0 20 20" fill="none">
+      <path d="M13 4l-6 6 6 6" stroke="var(--text)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+    </svg>
+  </button>
+  <button id="nav-next" class="nav-arrow nav-arrow-right" aria-label="Next slide">
+    <svg viewBox="0 0 20 20" fill="none">
+      <path d="M7 4l6 6-6 6" stroke="var(--text)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+    </svg>
+  </button>
 
-<!-- Side navigation arrows -->
-<button id="nav-prev" class="nav-arrow nav-arrow-left" aria-label="Previous slide">
-  <svg viewBox="0 0 20 20" fill="none"><path d="M13 4l-6 6 6 6" stroke="var(--text)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-</button>
-<button id="nav-next" class="nav-arrow nav-arrow-right" aria-label="Next slide">
-  <svg viewBox="0 0 20 20" fill="none"><path d="M7 4l6 6-6 6" stroke="var(--text)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-</button>
+  <!-- Dot navigation -->
+  <nav id="dots" aria-label="Slide navigation"></nav>
 
-<!-- Dot navigation -->
-<nav id="dots" aria-label="Slide navigation"></nav>
+  <script>
+    (function () {
+      'use strict';
 
-<script>
-(function () {
-  'use strict';
+      /* ── Configuration ── */
+      const SLIDE_INTERVAL = 20000; // 20 seconds
+      const TOTAL_SLIDES = document.querySelectorAll('.slide').length;
+      const SLIDE_TITLES = [
+        'Landing',
+        'SP: Code',
+        'SP vs dbt',
+        'NB: Code',
+        'NB vs dbt',
+        'DLT: Code',
+        'DLT vs dbt',
+        'Summary'
+      ];
 
-  /* ── Configuration ── */
-  const SLIDE_INTERVAL = 20000; // 20 seconds
-  const TOTAL_SLIDES = document.querySelectorAll('.slide').length;
-  const SLIDE_TITLES = ['Landing', 'Snowflake SP vs dbt', 'SP: Code Compare', 'Notebooks vs dbt', 'Notebooks: Code Compare', 'DLT vs dbt', 'DLT: Code Compare', 'Summary'];
+      /* ── State ── */
+      let currentIndex = 0;
+      let isPlaying = true;
+      let animFrameId = null;
+      let startTime = null;
+      let touchStartX = 0;
 
-  /* ── State ── */
-  let currentIndex = 0;
-  let isPlaying = true;
-  let animFrameId = null;
-  let startTime = null;
-  let touchStartX = 0;
+      /* ── DOM refs ── */
+      const track = document.getElementById('slide-track');
+      const progressBar = document.getElementById('progress-bar');
+      const resumeBtn = document.getElementById('resume-btn');
+      const pauseBadge = document.getElementById('pause-badge');
+      const dotsNav = document.getElementById('dots');
+      const breadcrumbNav = document.getElementById('breadcrumb');
 
-  /* ── DOM refs ── */
-  const track = document.getElementById('slide-track');
-  const progressBar = document.getElementById('progress-bar');
-  const resumeBtn = document.getElementById('resume-btn');
-  const pauseBadge = document.getElementById('pause-badge');
-  const dotsNav = document.getElementById('dots');
-  const breadcrumbNav = document.getElementById('breadcrumb');
+      /* ── Build dot indicators ── */
+      for (let i = 0; i < TOTAL_SLIDES; i++) {
+        const dot = document.createElement('button');
+        dot.className = 'dot' + (i === 0 ? ' active' : '');
+        dot.setAttribute('aria-label', 'Go to slide ' + (i + 1));
+        dot.addEventListener('click', function () {
+          goToSlide(i);
+          pause();
+        });
+        dotsNav.appendChild(dot);
+      }
+      const dots = dotsNav.querySelectorAll('.dot');
 
-  /* ── Build dot indicators ── */
-  for (let i = 0; i < TOTAL_SLIDES; i++) {
-    const dot = document.createElement('button');
-    dot.className = 'dot' + (i === 0 ? ' active' : '');
-    dot.setAttribute('aria-label', 'Go to slide ' + (i + 1));
-    dot.addEventListener('click', function () {
-      goToSlide(i);
-      pause();
-    });
-    dotsNav.appendChild(dot);
-  }
-  const dots = dotsNav.querySelectorAll('.dot');
+      /* ── Build breadcrumb items ── */
+      for (let i = 0; i < TOTAL_SLIDES; i++) {
+        if (i > 0) {
+          const sep = document.createElement('span');
+          sep.className = 'crumb-sep';
+          sep.setAttribute('aria-hidden', 'true');
+          sep.textContent = '\u203A'; // single right-pointing angle quotation mark
+          breadcrumbNav.appendChild(sep);
+        }
+        const crumb = document.createElement('button');
+        crumb.className = 'crumb' + (i === 0 ? ' active' : '');
+        crumb.textContent = SLIDE_TITLES[i];
+        crumb.setAttribute('aria-label', 'Go to slide: ' + SLIDE_TITLES[i]);
+        crumb.addEventListener('click', function () {
+          goToSlide(i);
+          pause();
+        });
+        breadcrumbNav.appendChild(crumb);
+      }
+      const crumbs = breadcrumbNav.querySelectorAll('.crumb');
 
-  /* ── Build breadcrumb items ── */
-  for (let i = 0; i < TOTAL_SLIDES; i++) {
-    if (i > 0) {
-      const sep = document.createElement('span');
-      sep.className = 'crumb-sep';
-      sep.setAttribute('aria-hidden', 'true');
-      sep.textContent = '\u203A'; // single right-pointing angle quotation mark
-      breadcrumbNav.appendChild(sep);
-    }
-    const crumb = document.createElement('button');
-    crumb.className = 'crumb' + (i === 0 ? ' active' : '');
-    crumb.textContent = SLIDE_TITLES[i];
-    crumb.setAttribute('aria-label', 'Go to slide: ' + SLIDE_TITLES[i]);
-    crumb.addEventListener('click', function () {
-      goToSlide(i);
-      pause();
-    });
-    breadcrumbNav.appendChild(crumb);
-  }
-  const crumbs = breadcrumbNav.querySelectorAll('.crumb');
+      /* ── Navigation ── */
+      function goToSlide(index) {
+        if (index < 0) index = TOTAL_SLIDES - 1;
+        if (index >= TOTAL_SLIDES) index = 0;
+        currentIndex = index;
+        track.style.transform = 'translateX(' + (-100 * currentIndex) + 'vw)';
+        dots.forEach(function (d, i) {
+          d.classList.toggle('active', i === currentIndex);
+        });
+        crumbs.forEach(function (c, i) {
+          c.classList.toggle('active', i === currentIndex);
+        });
+        resetProgress();
+      }
 
-  /* ── Navigation ── */
-  function goToSlide(index) {
-    if (index < 0) index = TOTAL_SLIDES - 1;
-    if (index >= TOTAL_SLIDES) index = 0;
-    currentIndex = index;
-    track.style.transform = 'translateX(' + (-100 * currentIndex) + 'vw)';
-    dots.forEach(function (d, i) {
-      d.classList.toggle('active', i === currentIndex);
-    });
-    crumbs.forEach(function (c, i) {
-      c.classList.toggle('active', i === currentIndex);
-    });
-    resetProgress();
-  }
+      function next() { goToSlide(currentIndex + 1); }
+      function prev() { goToSlide(currentIndex - 1); }
 
-  function next() { goToSlide(currentIndex + 1); }
-  function prev() { goToSlide(currentIndex - 1); }
+      /* ── Progress bar animation ── */
+      function resetProgress() {
+        startTime = performance.now();
+        progressBar.style.width = '0%';
+      }
 
-  /* ── Progress bar animation ── */
-  function resetProgress() {
-    startTime = performance.now();
-    progressBar.style.width = '0%';
-  }
+      function tickProgress(now) {
+        if (!isPlaying) return;
+        if (!startTime) startTime = now;
+        var elapsed = now - startTime;
+        var pct = Math.min((elapsed / SLIDE_INTERVAL) * 100, 100);
+        progressBar.style.width = pct + '%';
 
-  function tickProgress(now) {
-    if (!isPlaying) return;
-    if (!startTime) startTime = now;
-    var elapsed = now - startTime;
-    var pct = Math.min((elapsed / SLIDE_INTERVAL) * 100, 100);
-    progressBar.style.width = pct + '%';
+        if (elapsed >= SLIDE_INTERVAL) {
+          next();
+        } else {
+          animFrameId = requestAnimationFrame(tickProgress);
+        }
+      }
 
-    if (elapsed >= SLIDE_INTERVAL) {
-      next();
-    } else {
-      animFrameId = requestAnimationFrame(tickProgress);
-    }
-  }
+      function startProgress() {
+        resetProgress();
+        animFrameId = requestAnimationFrame(tickProgress);
+      }
 
-  function startProgress() {
-    resetProgress();
-    animFrameId = requestAnimationFrame(tickProgress);
-  }
+      /* ── Play / Pause ── */
+      function pause() {
+        if (!isPlaying) return;
+        isPlaying = false;
+        if (animFrameId) cancelAnimationFrame(animFrameId);
+        resumeBtn.classList.add('visible');
+        pauseBadge.classList.add('visible');
+      }
 
-  /* ── Play / Pause ── */
-  function pause() {
-    if (!isPlaying) return;
-    isPlaying = false;
-    if (animFrameId) cancelAnimationFrame(animFrameId);
-    resumeBtn.classList.add('visible');
-    pauseBadge.classList.add('visible');
-  }
+      function play() {
+        if (isPlaying) return;
+        isPlaying = true;
+        resumeBtn.classList.remove('visible');
+        pauseBadge.classList.remove('visible');
+        startProgress();
+      }
 
-  function play() {
-    if (isPlaying) return;
-    isPlaying = true;
-    resumeBtn.classList.remove('visible');
-    pauseBadge.classList.remove('visible');
-    startProgress();
-  }
+      function togglePlayPause() {
+        isPlaying ? pause() : play();
+      }
 
-  function togglePlayPause() {
-    isPlaying ? pause() : play();
-  }
+      /* ── Event listeners ── */
 
-  /* ── Event listeners ── */
+      // Keyboard
+      document.addEventListener('keydown', function (e) {
+        switch (e.key) {
+          case 'ArrowRight': case 'l': case 'ArrowDown': case 'j':
+            e.preventDefault();
+            next();
+            pause();
+            break;
+          case 'ArrowLeft': case 'h': case 'ArrowUp': case 'k':
+            e.preventDefault();
+            prev();
+            pause();
+            break;
+          case ' ':
+            e.preventDefault();
+            togglePlayPause();
+            break;
+        }
+      });
 
-  // Keyboard
-  document.addEventListener('keydown', function (e) {
-    switch (e.key) {
-      case 'ArrowRight': case 'l': case 'ArrowDown': case 'j':
-        e.preventDefault();
-        next();
-        pause();
-        break;
-      case 'ArrowLeft': case 'h': case 'ArrowUp': case 'k':
-        e.preventDefault();
+      // Resume button
+      resumeBtn.addEventListener('click', function () {
+        play();
+      });
+
+      // Side navigation arrows
+      document.getElementById('nav-prev').addEventListener('click', function (e) {
+        e.stopPropagation();
         prev();
         pause();
-        break;
-      case ' ':
-        e.preventDefault();
-        togglePlayPause();
-        break;
-    }
-  });
+      });
+      document.getElementById('nav-next').addEventListener('click', function (e) {
+        e.stopPropagation();
+        next();
+        pause();
+      });
 
-  // Resume button
-  resumeBtn.addEventListener('click', function () {
-    play();
-  });
+      // Touch / swipe
+      document.addEventListener('touchstart', function (e) {
+        touchStartX = e.changedTouches[0].clientX;
+      }, { passive: true });
 
-  // Side navigation arrows
-  document.getElementById('nav-prev').addEventListener('click', function (e) {
-    e.stopPropagation();
-    prev();
-    pause();
-  });
-  document.getElementById('nav-next').addEventListener('click', function (e) {
-    e.stopPropagation();
-    next();
-    pause();
-  });
+      document.addEventListener('touchend', function (e) {
+        var dx = e.changedTouches[0].clientX - touchStartX;
+        if (Math.abs(dx) > 50) {
+          dx < 0 ? next() : prev();
+          pause();
+        }
+      }, { passive: true });
 
-  // Touch / swipe
-  document.addEventListener('touchstart', function (e) {
-    touchStartX = e.changedTouches[0].clientX;
-  }, { passive: true });
+      // Click on dots is handled above; click on edges
+      document.addEventListener('click', function (e) {
+        // Ignore if clicking a button or link
+        if (e.target.closest('button, a, nav')) return;
+        var x = e.clientX;
+        var w = window.innerWidth;
+        if (x < w * 0.12) { prev(); pause(); }
+        else if (x > w * 0.88) { next(); pause(); }
+      });
 
-  document.addEventListener('touchend', function (e) {
-    var dx = e.changedTouches[0].clientX - touchStartX;
-    if (Math.abs(dx) > 50) {
-      dx < 0 ? next() : prev();
-      pause();
-    }
-  }, { passive: true });
+      /* ── Start ── */
+      goToSlide(0);
+      startProgress();
+    })();
+  </script>
 
-  // Click on dots is handled above; click on edges
-  document.addEventListener('click', function (e) {
-    // Ignore if clicking a button or link
-    if (e.target.closest('button, a, nav')) return;
-    var x = e.clientX;
-    var w = window.innerWidth;
-    if (x < w * 0.12) { prev(); pause(); }
-    else if (x > w * 0.88) { next(); pause(); }
-  });
+  <!-- Architecture canvas diagram -->
+  <script>
+    (function () {
+      'use strict';
 
-  /* ── Start ── */
-  goToSlide(0);
-  startProgress();
-})();
-</script>
+      /* ══════════════════════════════════════════════════════════════
+         CHANGE THIS VARIABLE TO SWITCH BETWEEN THE 3 DIAGRAM STYLES
+         Options: 'dag' | 'pipeline' | 'layered'
+         ══════════════════════════════════════════════════════════════ */
+      var DIAGRAM_STYLE = 'dag';
+
+      /* ── Pipeline colors & short labels ── */
+      var PIPES = [
+        { key: 'sp', color: '#29B5E8', label: 'Stored Procs' },
+        { key: 'nb', color: '#FF3621', label: 'Notebooks' },
+        { key: 'dlt', color: '#FF6B35', label: 'DLT' },
+        { key: 'dbt', color: '#4ecdc4', label: 'dbt' }
+      ];
+
+      /* ── Unified layers matching actual project lineage ── */
+      var LAYERS = [
+        { names: { sp: 'Raw', nb: 'Bronze', dlt: 'Bronze', dbt: 'Sources' }, nodes: ['orders', 'order_items', 'customers', 'menu_items', 'locations', 'promotions'] },
+        { names: { sp: 'Cleansed', nb: 'Silver', dlt: 'Silver', dbt: 'Staging' }, nodes: ['stg_orders', 'stg_order_items', 'stg_customers', 'stg_menu_items', 'stg_locations', 'stg_promotions'] },
+        { names: { sp: 'Enriched', nb: 'Silver+', dlt: 'Refined', dbt: 'Intermediate' }, nodes: ['int_orders', 'int_order_items', 'int_cust_sales', 'int_menu_sales', 'int_store_perf', 'int_promotions', 'int_daily_sales'] },
+        { names: { sp: 'Curated', nb: 'Gold', dlt: 'Gold', dbt: 'Marts' }, nodes: ['fct_sales', 'fct_daily_sales', 'fct_store_perf', 'fct_promo_lift', 'dim_customer', 'dim_menu_item', 'dim_location'] }
+      ];
+
+      /* ── Explicit lineage-style edge definitions ── */
+      var EDGE_DEFS = [
+        // Sources → Staging (1:1 via source())
+        ['orders', 'stg_orders'],
+        ['order_items', 'stg_order_items'],
+        ['customers', 'stg_customers'],
+        ['menu_items', 'stg_menu_items'],
+        ['locations', 'stg_locations'],
+        ['promotions', 'stg_promotions'],
+        // Staging → Intermediate (via ref())
+        ['stg_orders', 'int_orders'],
+        ['stg_order_items', 'int_order_items'],
+        ['stg_orders', 'int_cust_sales'],
+        ['stg_order_items', 'int_cust_sales'],
+        ['stg_customers', 'int_cust_sales'],
+        ['stg_order_items', 'int_menu_sales'],
+        ['stg_menu_items', 'int_menu_sales'],
+        ['stg_orders', 'int_store_perf'],
+        ['stg_locations', 'int_store_perf'],
+        ['stg_orders', 'int_promotions'],
+        ['stg_promotions', 'int_promotions'],
+        ['stg_orders', 'int_daily_sales'],
+        ['stg_order_items', 'int_daily_sales'],
+        // Intermediate → Marts (via ref())
+        ['int_orders', 'fct_sales'],
+        ['int_order_items', 'fct_sales'],
+        ['int_menu_sales', 'fct_sales'],
+        ['int_cust_sales', 'fct_sales'],
+        ['int_daily_sales', 'fct_daily_sales'],
+        ['int_promotions', 'fct_daily_sales'],
+        ['int_store_perf', 'fct_store_perf'],
+        ['int_daily_sales', 'fct_store_perf'],
+        ['int_promotions', 'fct_promo_lift'],
+        ['int_daily_sales', 'fct_promo_lift'],
+        ['int_cust_sales', 'dim_customer'],
+        ['int_menu_sales', 'dim_menu_item'],
+        ['int_store_perf', 'dim_location']
+      ];
+
+      /* ── Helpers ── */
+      var EDGE_COLOR = '#d4a24e'; // amber for unified diagram edges
+      function hexRgba(hex, a) {
+        var r = parseInt(hex.slice(1, 3), 16);
+        var g = parseInt(hex.slice(3, 5), 16);
+        var b = parseInt(hex.slice(5, 7), 16);
+        return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+      }
+      function roundRect(ctx, x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + w - r, y);
+        ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+        ctx.lineTo(x + w, y + h - r);
+        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        ctx.lineTo(x + r, y + h);
+        ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+      }
+
+      /* ── Draw multi-colored layer labels ── */
+      function drawLayerLabels(ctx, li, cx, cy, align) {
+        var names = LAYERS[li].names;
+        var lineH = 14;
+        var totalH = PIPES.length * lineH;
+        var topY = cy - totalH / 2 + lineH / 2;
+        ctx.font = '500 10px "IBM Plex Sans", sans-serif';
+        ctx.textAlign = align;
+        ctx.textBaseline = 'middle';
+        PIPES.forEach(function (p, pi) {
+          var y = topY + pi * lineH;
+          // colored dot
+          ctx.fillStyle = p.color;
+          var dotX = align === 'right' ? cx + 4 : cx - ctx.measureText(p.label + ': ' + names[p.key]).width - 8;
+          ctx.beginPath();
+          ctx.arc(align === 'right' ? cx - ctx.measureText(names[p.key]).width - 8 : cx + 4, y, 3, 0, Math.PI * 2);
+          ctx.fill();
+          // label text
+          ctx.fillStyle = hexRgba(p.color, 0.85);
+          ctx.fillText(names[p.key], cx, y);
+        });
+      }
+
+      /* ── Draw multi-colored layer labels above each column ── */
+      function drawLayerLabelsTop(ctx, li, cx, topY) {
+        var names = LAYERS[li].names;
+        var lineH = 14;
+        ctx.font = '500 10px "IBM Plex Sans", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        PIPES.forEach(function (p, pi) {
+          var y = topY + pi * lineH;
+          var label = names[p.key];
+          var tw = ctx.measureText(label).width;
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(cx - tw / 2 - 8, y, 3, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = hexRgba(p.color, 0.85);
+          ctx.fillText(label, cx, y);
+        });
+      }
+
+      /* ── Layout node positions ── */
+      function layoutNodes(w, h, padLeft, padTop, padRight, padBot) {
+        padLeft = typeof padLeft === 'number' ? padLeft : 28;
+        padTop = typeof padTop === 'number' ? padTop : 82;
+        padRight = typeof padRight === 'number' ? padRight : 28;
+        padBot = typeof padBot === 'number' ? padBot : 24;
+        var nL = LAYERS.length;
+        var layerGap = (w - padLeft - padRight) / (nL - 1 || 1);
+        var nodeW = Math.max(72, Math.min(96, layerGap - 22));
+        var nodeH = h < 420 ? 22 : 24;
+        var gap = h < 420 ? 7 : 8;
+        var positions = [];
+        LAYERS.forEach(function (layer, li) {
+          var x = padLeft + li * layerGap;
+          var n = layer.nodes.length;
+          var totalH = n * nodeH + (n - 1) * gap;
+          var startY = padTop + (h - padTop - padBot - totalH) / 2;
+          layer.nodes.forEach(function (name, ni) {
+            positions.push({ x: x, y: startY + ni * (nodeH + gap) + nodeH / 2, w: nodeW, h: nodeH, label: name, layer: li });
+          });
+        });
+        return positions;
+      }
+
+      /* ── Generate edges from explicit lineage definitions ── */
+      function makeEdges(positions) {
+        var edges = [];
+        EDGE_DEFS.forEach(function (def) {
+          var from = null, to = null;
+          for (var i = 0; i < positions.length; i++) {
+            if (positions[i].label === def[0]) from = positions[i];
+            if (positions[i].label === def[1]) to = positions[i];
+          }
+          if (from && to) edges.push([from, to]);
+        });
+        return edges;
+      }
+
+      /* ══════════════════════════════════
+         STYLE 1: DAG (animated particles)
+         ══════════════════════════════════ */
+      function drawDAG(ctx, w, h, time) {
+        var sidePad = Math.max(86, w * 0.18);
+        var pos = layoutNodes(w, h, sidePad, 86, sidePad, 18);
+        var edges = makeEdges(pos);
+
+        // edges
+        edges.forEach(function (e) {
+          var a = e[0], b = e[1];
+          var x1 = a.x + a.w / 2, x2 = b.x - b.w / 2;
+          var cp = (x1 + x2) / 2;
+          ctx.save();
+          ctx.globalAlpha = 0.14;
+          ctx.strokeStyle = EDGE_COLOR;
+          ctx.lineWidth = 1.5;
+          ctx.shadowColor = EDGE_COLOR;
+          ctx.shadowBlur = 5;
+          ctx.beginPath();
+          ctx.moveTo(x1, a.y);
+          ctx.bezierCurveTo(cp, a.y, cp, b.y, x2, b.y);
+          ctx.stroke();
+          ctx.restore();
+        });
+
+        // particles
+        if (time) {
+          edges.forEach(function (e, ei) {
+            var a = e[0], b = e[1];
+            var x1 = a.x + a.w / 2, x2 = b.x - b.w / 2;
+            var cp = (x1 + x2) / 2;
+            for (var pi = 0; pi < 2; pi++) {
+              var speed = 0.0003 + (ei % 5) * 0.00005;
+              var t = ((time * speed) + pi * 0.5 + ei * 0.07) % 1;
+              var mt = 1 - t;
+              var px = mt * mt * mt * x1 + 3 * mt * mt * t * cp + 3 * mt * t * t * cp + t * t * t * x2;
+              var py = mt * mt * mt * a.y + 3 * mt * mt * t * a.y + 3 * mt * t * t * b.y + t * t * t * b.y;
+              // pick a pipe color based on edge index
+              var pc = PIPES[ei % PIPES.length].color;
+              ctx.save();
+              ctx.globalAlpha = 0.75 * Math.sin(t * Math.PI);
+              ctx.fillStyle = pc;
+              ctx.shadowColor = pc;
+              ctx.shadowBlur = 10;
+              ctx.beginPath();
+              ctx.arc(px, py, 2.2, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.restore();
+            }
+          });
+        }
+
+        // nodes
+        pos.forEach(function (nd) {
+          var x = nd.x - nd.w / 2, y = nd.y - nd.h / 2;
+          ctx.save();
+          roundRect(ctx, x, y, nd.w, nd.h, 7);
+          ctx.fillStyle = hexRgba(EDGE_COLOR, 0.07);
+          ctx.fill();
+          ctx.strokeStyle = hexRgba(EDGE_COLOR, 0.3);
+          ctx.lineWidth = 1;
+          roundRect(ctx, x, y, nd.w, nd.h, 7);
+          ctx.stroke();
+          ctx.restore();
+          ctx.fillStyle = '#e8e4df';
+          ctx.font = '500 9.5px "IBM Plex Sans", sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(nd.label, nd.x, nd.y);
+        });
+
+        // layer labels (top, multi-color)
+        LAYERS.forEach(function (layer, li) {
+          var lnodes = pos.filter(function (n) { return n.layer === li; });
+          drawLayerLabelsTop(ctx, li, lnodes[0].x, 24);
+        });
+      }
+
+      /* ═══════════════════════════════════════
+         STYLE 2: PIPELINE (horizontal blocks)
+         ═══════════════════════════════════════ */
+      function drawPipeline(ctx, w, h) {
+        var n = LAYERS.length;
+        var pad = 20;
+        var arrowW = 30;
+        var blockW = (w - pad * 2 - arrowW * (n - 1)) / n;
+        var blockH = h - pad * 2;
+
+        LAYERS.forEach(function (layer, li) {
+          var x = pad + li * (blockW + arrowW);
+          var y = pad;
+
+          // block bg
+          ctx.save();
+          roundRect(ctx, x, y, blockW, blockH, 12);
+          ctx.fillStyle = hexRgba(EDGE_COLOR, 0.04 + li * 0.015);
+          ctx.fill();
+          ctx.strokeStyle = hexRgba(EDGE_COLOR, 0.2);
+          ctx.lineWidth = 1;
+          roundRect(ctx, x, y, blockW, blockH, 12);
+          ctx.stroke();
+          ctx.restore();
+
+          // multi-color labels at top
+          var labelStartY = y + 14;
+          PIPES.forEach(function (p, pi) {
+            var ly = labelStartY + pi * 15;
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.arc(x + 14, ly + 1, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.font = '500 10px "IBM Plex Sans", sans-serif';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = hexRgba(p.color, 0.9);
+            ctx.fillText(layer.names[p.key], x + 22, ly + 1);
+          });
+
+          // divider line
+          var divY = labelStartY + PIPES.length * 15 + 4;
+          ctx.save();
+          ctx.strokeStyle = hexRgba(EDGE_COLOR, 0.12);
+          ctx.beginPath();
+          ctx.moveTo(x + 10, divY);
+          ctx.lineTo(x + blockW - 10, divY);
+          ctx.stroke();
+          ctx.restore();
+
+          // node list
+          ctx.font = '400 10px "IBM Plex Sans", sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'top';
+          layer.nodes.forEach(function (node, ni) {
+            var ny = divY + 10 + ni * 20;
+            if (ny + 14 < y + blockH - 6) {
+              ctx.fillStyle = hexRgba(EDGE_COLOR, 0.3);
+              ctx.beginPath();
+              ctx.arc(x + blockW / 2 - ctx.measureText(node).width / 2 - 8, ny + 6, 2.5, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.fillStyle = '#a8a4a0';
+              ctx.fillText(node, x + blockW / 2, ny);
+            }
+          });
+
+          // arrow to next
+          if (li < n - 1) {
+            var ax = x + blockW + 4;
+            var ay = y + blockH / 2;
+            var grad = ctx.createLinearGradient(ax, ay, ax + arrowW - 8, ay);
+            grad.addColorStop(0, hexRgba(EDGE_COLOR, 0.1));
+            grad.addColorStop(1, hexRgba(EDGE_COLOR, 0.4));
+            ctx.save();
+            ctx.strokeStyle = grad;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(ax, ay);
+            ctx.lineTo(ax + arrowW - 12, ay);
+            ctx.stroke();
+            ctx.fillStyle = hexRgba(EDGE_COLOR, 0.45);
+            ctx.beginPath();
+            ctx.moveTo(ax + arrowW - 8, ay);
+            ctx.lineTo(ax + arrowW - 16, ay - 5);
+            ctx.lineTo(ax + arrowW - 16, ay + 5);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+          }
+        });
+      }
+
+      /* ══════════════════════════════════════
+         STYLE 3: LAYERED (vertical stacked)
+         ══════════════════════════════════════ */
+      function drawLayered(ctx, w, h) {
+        var n = LAYERS.length;
+        var padX = 130;
+        var padY = 16;
+        var arrowH = 18;
+        var bandH = (h - padY * 2 - arrowH * (n - 1)) / n;
+        var bandW = w - padX - 20;
+
+        LAYERS.forEach(function (layer, li) {
+          var y = padY + li * (bandH + arrowH);
+          var x = padX;
+
+          // band background
+          ctx.save();
+          roundRect(ctx, x, y, bandW, bandH, 10);
+          ctx.fillStyle = hexRgba(EDGE_COLOR, 0.035 + li * 0.012);
+          ctx.fill();
+          ctx.strokeStyle = hexRgba(EDGE_COLOR, 0.14);
+          ctx.lineWidth = 1;
+          roundRect(ctx, x, y, bandW, bandH, 10);
+          ctx.stroke();
+          ctx.restore();
+
+          // left multi-color labels
+          drawLayerLabels(ctx, li, padX - 14, y + bandH / 2, 'right');
+
+          // node boxes
+          var nodeW = 96;
+          var nodeH = 24;
+          var nodeGap = 8;
+          var numN = layer.nodes.length;
+          var totalW = numN * nodeW + (numN - 1) * nodeGap;
+          var nx0 = x + (bandW - totalW) / 2;
+
+          layer.nodes.forEach(function (node, ni) {
+            var nx = nx0 + ni * (nodeW + nodeGap);
+            var ny = y + (bandH - nodeH) / 2;
+            ctx.save();
+            roundRect(ctx, nx, ny, nodeW, nodeH, 5);
+            ctx.fillStyle = hexRgba(EDGE_COLOR, 0.08);
+            ctx.fill();
+            ctx.strokeStyle = hexRgba(EDGE_COLOR, 0.22);
+            ctx.lineWidth = 0.75;
+            roundRect(ctx, nx, ny, nodeW, nodeH, 5);
+            ctx.stroke();
+            ctx.restore();
+            ctx.fillStyle = '#d0ccc8';
+            ctx.font = '400 9.5px "IBM Plex Sans", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(node, nx + nodeW / 2, ny + nodeH / 2);
+          });
+
+          // down arrow
+          if (li < n - 1) {
+            var aX = x + bandW / 2;
+            var aY1 = y + bandH + 3;
+            var aY2 = y + bandH + arrowH - 3;
+            ctx.save();
+            ctx.strokeStyle = hexRgba(EDGE_COLOR, 0.25);
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(aX, aY1);
+            ctx.lineTo(aX, aY2);
+            ctx.stroke();
+            ctx.fillStyle = hexRgba(EDGE_COLOR, 0.3);
+            ctx.beginPath();
+            ctx.moveTo(aX, aY2 + 2);
+            ctx.lineTo(aX - 4.5, aY2 - 4);
+            ctx.lineTo(aX + 4.5, aY2 - 4);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+          }
+        });
+      }
+
+      /* ── Canvas setup (HiDPI) ── */
+      var canvas = document.getElementById('arch-canvas');
+      if (!canvas) return;
+
+      function sizeCanvas() {
+        var dpr = window.devicePixelRatio || 1;
+        var rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+      }
+
+      function getCtx() {
+        var dpr = window.devicePixelRatio || 1;
+        var ctx = canvas.getContext('2d');
+        var cw = canvas.width / dpr;
+        var ch = canvas.height / dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, cw, ch);
+        return { ctx: ctx, w: cw, h: ch };
+      }
+
+      /* ── Render ── */
+      function render(time) {
+        var info = getCtx();
+        switch (DIAGRAM_STYLE) {
+          case 'dag': drawDAG(info.ctx, info.w, info.h, time); break;
+          case 'pipeline': drawPipeline(info.ctx, info.w, info.h); break;
+          case 'layered': drawLayered(info.ctx, info.w, info.h); break;
+        }
+        if (DIAGRAM_STYLE === 'dag') requestAnimationFrame(render);
+      }
+
+      sizeCanvas();
+      if (DIAGRAM_STYLE === 'dag') {
+        requestAnimationFrame(render);
+      } else {
+        render(0);
+      }
+      window.addEventListener('resize', function () {
+        sizeCanvas();
+        if (DIAGRAM_STYLE !== 'dag') render(0);
+      });
+    })();
+  </script>
 </body>
+
 </html>
