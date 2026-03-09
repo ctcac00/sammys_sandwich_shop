@@ -163,4 +163,4 @@ Each platform implements the same three-layer architecture:
 
 ## License
 
-This is a demonstration project for educational purposes.
+This project is licensed under the [MIT License](LICENSE).
