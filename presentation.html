@@ -646,7 +646,7 @@
 
     /* ── "So What" Callout Banner ── */
     .so-what {
-      margin-top: 1.25rem;
+      margin-bottom: 1.25rem;
       padding: 1rem 1.4rem;
       background: rgba(212, 162, 78, .06);
       border-left: 3px solid var(--amber);
@@ -750,7 +750,7 @@
       align-items: center;
       gap: .6rem;
       padding: .7rem 1.2rem;
-      border-bottom: 1px solid rgba(255, 255, 255, .06);
+      border-top: 1px solid rgba(255, 255, 255, .06);
       background: rgba(255, 255, 255, .02);
     }
 
@@ -808,7 +808,7 @@
       align-items: center;
       gap: .6rem;
       padding: .65rem 1.2rem;
-      border-top: 1px solid rgba(255, 255, 255, .06);
+      border-bottom: 1px solid rgba(255, 255, 255, .06);
       background: rgba(255, 255, 255, .02);
     }
 
@@ -1303,6 +1303,8 @@
           <p>Same transformation outcome, very different amount of framework overhead</p>
         </div>
 
+        <div class="so-what">Developers waste ~60% of their SP effort on plumbing that dbt handles automatically.</div>
+
         <div class="option-card chips-card">
           <div class="chip-stack">
             <div class="chip-row tradeoff">
@@ -1326,7 +1328,6 @@
             </div>
           </div>
         </div>
-        <div class="so-what">Developers waste ~60% of their SP effort on plumbing that dbt handles automatically.</div>
       </div>
     </section>
 
@@ -1340,8 +1341,10 @@
 
         <!-- Native: Stored Procedure -->
         <div class="code-panel native-panel">
-          <div class="code-panel-header">
-            <h3 class="accent-amber">Snowflake Stored Procedure</h3>
+          <div class="code-metric amber">
+            <span class="metric-number">~120</span>
+            <span class="metric-label">lines &mdash; DDL wrapper, DECLARE, INSERT INTO column list, manual row
+              counting</span>
           </div>
           <div class="code-block">
             <pre><span class="cm">-- sp_enrich_orders.sql  (118 lines)</span>
@@ -1382,17 +1385,17 @@
 <span class="kw">END</span>;
 $$;</pre>
           </div>
-          <div class="code-metric amber">
-            <span class="metric-number">~120</span>
-            <span class="metric-label">lines &mdash; DDL wrapper, DECLARE, INSERT INTO column list, manual row
-              counting</span>
+          <div class="code-panel-header">
+            <h3 class="accent-amber">Snowflake Stored Procedure</h3>
           </div>
         </div>
 
         <!-- dbt -->
         <div class="code-panel dbt-panel">
-          <div class="code-panel-header">
-            <h3 class="accent-teal">dbt Model</h3>
+          <div class="code-metric teal">
+            <span class="metric-number">~40</span>
+            <span class="metric-label">lines &mdash; pure business logic. dbt handles DDL, execution &amp;
+              logging.</span>
           </div>
           <div class="code-block">
             <pre><span class="cm">-- models/staging/stg_orders.sql</span>
@@ -1421,10 +1424,8 @@ staged <span class="kw">as</span> (
 
 <span class="kw">select</span> * <span class="kw">from</span> staged</pre>
           </div>
-          <div class="code-metric teal">
-            <span class="metric-number">~40</span>
-            <span class="metric-label">lines &mdash; pure business logic. dbt handles DDL, execution &amp;
-              logging.</span>
+          <div class="code-panel-header">
+            <h3 class="accent-teal">dbt Model</h3>
           </div>
         </div>
       </div>
@@ -1437,6 +1438,8 @@ staged <span class="kw">as</span> (
           <h2>Databricks Notebooks <span>vs</span> dbt</h2>
           <p>Same transformation outcome, very different debugging workflow.</p>
         </div>
+
+        <div class="so-what">A 10-minute fix becomes a multi-hour investigation when errors surface 3 files from the root cause.</div>
 
         <div class="option-card chips-card">
           <div class="chip-stack">
@@ -1461,7 +1464,6 @@ staged <span class="kw">as</span> (
             </div>
           </div>
         </div>
-        <div class="so-what">A 10-minute fix becomes a multi-hour investigation when errors surface 3 files from the root cause.</div>
       </div>
     </section>
 
@@ -1475,8 +1477,9 @@ staged <span class="kw">as</span> (
 
         <!-- Native: Databricks Notebook -->
         <div class="code-panel native-panel">
-          <div class="code-panel-header">
-            <h3 class="accent-amber">Databricks Notebook</h3>
+          <div class="code-metric amber">
+            <span class="metric-number">83</span>
+            <span class="metric-label">lines &mdash; Python imports, PySpark API, manual write, format config</span>
           </div>
           <div class="code-block">
             <pre><span class="cm"># stg_orders.py  (83 lines, 7 cells)</span>
@@ -1512,16 +1515,16 @@ staged.write \
     .saveAsTable(table_name)
 <span class="fn">print</span>(<span class="str">f"Written {staged.count()} rows"</span>)</pre>
           </div>
-          <div class="code-metric amber">
-            <span class="metric-number">83</span>
-            <span class="metric-label">lines &mdash; Python imports, PySpark API, manual write, format config</span>
+          <div class="code-panel-header">
+            <h3 class="accent-amber">Databricks Notebook</h3>
           </div>
         </div>
 
         <!-- dbt -->
         <div class="code-panel dbt-panel">
-          <div class="code-panel-header">
-            <h3 class="accent-teal">dbt Model</h3>
+          <div class="code-metric teal">
+            <span class="metric-number">~40</span>
+            <span class="metric-label">lines &mdash; no imports, no write logic. Just SQL that anyone can read.</span>
           </div>
           <div class="code-block">
             <pre><span class="cm">-- models/staging/stg_orders.sql</span>
@@ -1550,9 +1553,8 @@ staged <span class="kw">as</span> (
 
 <span class="kw">select</span> * <span class="kw">from</span> staged</pre>
           </div>
-          <div class="code-metric teal">
-            <span class="metric-number">~40</span>
-            <span class="metric-label">lines &mdash; no imports, no write logic. Just SQL that anyone can read.</span>
+          <div class="code-panel-header">
+            <h3 class="accent-teal">dbt Model</h3>
           </div>
         </div>
       </div>
@@ -1565,6 +1567,8 @@ staged <span class="kw">as</span> (
           <h2>Databricks DLT <span>vs</span> dbt</h2>
           <p>Quick takeaways from using DLT in practice</p>
         </div>
+
+        <div class="so-what">Lock-in compounds: each new pipeline raises the cost of ever moving off Databricks.</div>
 
         <div class="option-card chips-card">
           <div class="chip-stack">
@@ -1589,7 +1593,6 @@ staged <span class="kw">as</span> (
             </div>
           </div>
         </div>
-        <div class="so-what">Lock-in compounds: each new pipeline raises the cost of ever moving off Databricks.</div>
       </div>
     </section>
 
@@ -1603,8 +1606,9 @@ staged <span class="kw">as</span> (
 
         <!-- Native: Delta Live Tables -->
         <div class="code-panel native-panel">
-          <div class="code-panel-header">
-            <h3 class="accent-amber">Delta Live Tables</h3>
+          <div class="code-metric amber">
+            <span class="metric-number">Python</span>
+            <span class="metric-label">required &mdash; PySpark API, decorators, Databricks-only</span>
           </div>
           <div class="code-block">
             <pre><span class="cm"># dlt/silver/staging/stg_orders.py</span>
@@ -1642,16 +1646,16 @@ staged <span class="kw">as</span> (
         )
     )</pre>
           </div>
-          <div class="code-metric amber">
-            <span class="metric-number">Python</span>
-            <span class="metric-label">required &mdash; PySpark API, decorators, Databricks-only</span>
+          <div class="code-panel-header">
+            <h3 class="accent-amber">Delta Live Tables</h3>
           </div>
         </div>
 
         <!-- dbt -->
         <div class="code-panel dbt-panel">
-          <div class="code-panel-header">
-            <h3 class="accent-teal">dbt Model + YAML</h3>
+          <div class="code-metric teal">
+            <span class="metric-number">SQL</span>
+            <span class="metric-label">only &mdash; tests in YAML, runs on Snowflake, Databricks, BigQuery, etc.</span>
           </div>
           <div class="code-block">
             <pre><span class="cm">-- models/staging/stg_orders.sql</span>
@@ -1681,9 +1685,8 @@ staged <span class="kw">as</span> (
 <span class="cm">--       - name: total_amount</span>
 <span class="cm">--         tests: [not_null]</span></pre>
           </div>
-          <div class="code-metric teal">
-            <span class="metric-number">SQL</span>
-            <span class="metric-label">only &mdash; tests in YAML, runs on Snowflake, Databricks, BigQuery, etc.</span>
+          <div class="code-panel-header">
+            <h3 class="accent-teal">dbt Model + YAML</h3>
           </div>
         </div>
       </div>
