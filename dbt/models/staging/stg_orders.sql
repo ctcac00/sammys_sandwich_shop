@@ -25,11 +25,11 @@ staged as (
         trim(payment_method) as payment_method,
         
         -- Amounts
-        coalesce(try_to_number(subtotal, 10, 2), 0) as subtotal,
-        coalesce(try_to_number(tax_amount, 10, 2), 0) as tax_amount,
-        coalesce(try_to_number(discount_amount, 10, 2), 0) as discount_amount,
-        coalesce(try_to_number(tip_amount, 10, 2), 0) as tip_amount,
-        coalesce(try_to_number(total_amount, 10, 2), 0) as total_amount,
+        {{ safe_cast_number('subtotal') }} as subtotal,
+        {{ safe_cast_number('tax_amount') }} as tax_amount,
+        {{ safe_cast_number('discount_amount') }} as discount_amount,
+        {{ safe_cast_number('tip_amount') }} as tip_amount,
+        {{ safe_cast_number('total_amount') }} as total_amount,
         
         -- Metadata
         _loaded_at,

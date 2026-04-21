@@ -32,12 +32,7 @@ staged as (
         trim(preferred_location) as preferred_location_id,
         
         -- Boolean conversion
-        case upper(trim(marketing_opt_in))
-            when 'TRUE' then true
-            when 'YES' then true
-            when '1' then true
-            else false
-        end as marketing_opt_in,
+        {{ cast_boolean_string('marketing_opt_in') }} as marketing_opt_in,
         
         -- Metadata
         _loaded_at,
