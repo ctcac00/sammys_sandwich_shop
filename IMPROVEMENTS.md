@@ -8,7 +8,7 @@ Gaps and inconsistencies identified during a cross-platform review of the projec
 
 ### 1. ~~Payment Method / Order Type Schema Drift Across Platforms~~ RESOLVED
 
-Updated `databricks/dlt/gold/dimensions.py` to align both static dimensions with the canonical Snowflake/dbt schema:
+Updated `databricks/lakeflow/gold/dimensions.py` to align both static dimensions with the canonical Snowflake/dbt schema:
 
 - `dim_payment_method`: renamed `payment_category` to `payment_type`, replaced `is_cash` with `is_digital`, added `processing_fee_pct`, removed `"Unknown"` row, corrected `"Gift Card"` type from `"Other"` to `"Prepaid"`.
 - `dim_order_type`: renamed `is_dine_in` to `is_in_store`, replaced `is_drive_thru` with `avg_service_minutes`, removed `"Unknown"` row.
@@ -65,7 +65,7 @@ sources:
 
 ### 9. Lakeflow Fiscal Quarter Logic Potentially Incorrect
 
-In `databricks/dlt/gold/dimensions/dim_date.py`, the fiscal quarter calculation:
+In `databricks/lakeflow/gold/dimensions/dim_date.py`, the fiscal quarter calculation:
 
 ```python
 when(month(col("full_date")) >= 10, quarter(col("full_date")) - 3)
@@ -104,7 +104,7 @@ The README states "65+ notebooks organized by layer" for the Databricks notebook
 
 ### 13. Metadata Columns Inconsistent Across Platforms
 
-The Snowflake raw DDL adds `_loaded_at` and `_source_file` metadata columns on load. The dbt staging models reference these columns. Neither the Databricks notebooks nor DLT bronze layers add equivalent metadata columns, creating inconsistency in what "raw" means across platforms.
+The Snowflake raw DDL adds `_loaded_at` and `_source_file` metadata columns on load. The dbt staging models reference these columns. Neither the Databricks notebooks nor Lakeflow bronze layers add equivalent metadata columns, creating inconsistency in what "raw" means across platforms.
 
 **Fix:** Either add `_loaded_at` / `_source_file` to the Databricks bronze layer or document this as an intentional Snowflake-only feature.
 
@@ -119,10 +119,10 @@ The Snowflake raw DDL adds `_loaded_at` and `_source_file` metadata columns on l
 | 3 | ~~SCD Type 1 vs Type 2 structural mismatch~~ | ~~Medium~~ | ~~RESOLVED~~ |
 | 4 | ~~Missing tests on intermediate and report layers~~ | ~~Medium~~ | ~~RESOLVED~~ |
 | 5 | ~~Dimension test coverage gaps~~ | ~~Medium~~ | ~~RESOLVED~~ |
-| 6 | ~~DLT dimension columns diverge from dbt/Snowflake~~ | ~~Medium~~ | ~~RESOLVED~~ |
+| 6 | ~~Lakeflow dimension columns diverge from dbt/Snowflake~~ | ~~Medium~~ | ~~RESOLVED~~ |
 | 7 | No dbt source freshness configuration | Low | dbt |
 | 8 | Missing unknown records for dim_menu_item / dim_ingredient | Low | All platforms |
-| 9 | DLT fiscal quarter logic potentially incorrect | Low | DLT |
+| 9 | Lakeflow fiscal quarter logic potentially incorrect | Low | Lakeflow |
 | 10 | dbt singular test coverage is limited | Low | dbt |
 | 11 | README notebook count inaccuracy | Low | README |
 | 12 | Missing composite key test for menu_item_ingredients | Low | Databricks notebooks |

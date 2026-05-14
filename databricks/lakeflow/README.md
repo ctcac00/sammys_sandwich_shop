@@ -44,7 +44,7 @@ This directory contains a Lakeflow Declarative Pipelines implementation of the S
 ## Directory Structure
 
 ```
-dlt/
+lakeflow/
 ├── config.py                    # Shared configuration (catalog, paths, defaults)
 ├── README.md                    # This file
 │

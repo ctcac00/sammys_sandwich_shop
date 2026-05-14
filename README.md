@@ -48,7 +48,7 @@ Sammy's Sandwich Shop is a fictional sandwich business with multiple locations. 
     │   ├── 04_tests/        # Data quality tests
     │   └── orchestration/   # Pipeline runner
     │
-    └── dlt/                 # Lakeflow Declarative Pipelines
+    └── lakeflow/            # Lakeflow Declarative Pipelines
         ├── bronze/          # Raw ingestion tables
         ├── silver/          # Staging and enriched tables
         └── gold/            # Dimensions, facts, report views
@@ -103,7 +103,7 @@ See [databricks/notebooks/README.md](databricks/notebooks/README.md) for setup a
 
 Declarative pipeline implementation using Lakeflow Declarative Pipelines. Same transformations as the notebooks version but with automatic dependency management and built-in data quality.
 
-See [databricks/dlt/README.md](databricks/dlt/README.md) for setup and documentation.
+See [databricks/lakeflow/README.md](databricks/lakeflow/README.md) for setup and documentation.
 
 **Features:**
 - 7 notebooks (vs 65+ in traditional approach)
@@ -113,7 +113,7 @@ See [databricks/dlt/README.md](databricks/dlt/README.md) for setup and documenta
 
 ```bash
 # Create Lakeflow pipeline in Databricks UI
-# Add all notebooks from databricks/dlt/
+# Add all notebooks from databricks/lakeflow/
 # Set target catalog and schema
 ```
 

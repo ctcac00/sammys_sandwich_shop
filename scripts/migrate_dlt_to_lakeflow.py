@@ -20,7 +20,7 @@ REPLACEMENTS = [
     ("dlt.create_sink(", "dp.create_sink("),
 ]
 
-root = Path("databricks/dlt")
+root = Path("databricks/lakeflow")
 changed_files = []
 
 for py_file in root.rglob("*.py"):
