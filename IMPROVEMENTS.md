@@ -13,9 +13,9 @@ Updated `databricks/dlt/gold/dimensions.py` to align both static dimensions with
 - `dim_payment_method`: renamed `payment_category` to `payment_type`, replaced `is_cash` with `is_digital`, added `processing_fee_pct`, removed `"Unknown"` row, corrected `"Gift Card"` type from `"Other"` to `"Prepaid"`.
 - `dim_order_type`: renamed `is_dine_in` to `is_in_store`, replaced `is_drive_thru` with `avg_service_minutes`, removed `"Unknown"` row.
 
-### 2. ~~`"Mobile Pay"` vs `"Mobile Payment"` Value Mismatch in DLT~~ RESOLVED
+### 2. ~~`"Mobile Pay"` vs `"Mobile Payment"` Value Mismatch in Lakeflow~~ RESOLVED
 
-Fixed in the same change as #1. DLT `dim_payment_method` now seeds `"Mobile Pay"` (matching the source CSV and other platforms) instead of `"Mobile Payment"`.
+Fixed in the same change as #1. Lakeflow `dim_payment_method` now seeds `"Mobile Pay"` (matching the source CSV and other platforms) instead of `"Mobile Payment"`.
 
 ---
 
@@ -36,9 +36,9 @@ Added column-level tests to `_intermediate.yml` and `_reports.yml`:
 
 Added the five missing dimensions (`dim_ingredient`, `dim_date`, `dim_time`, `dim_payment_method`, `dim_order_type`) to the `dim_tests` list in `databricks/notebooks/04_tests/test_data_quality.py`. All nine dimensions now have surrogate key `unique`/`not_null` tests, matching dbt's coverage.
 
-### 6. ~~DLT Dimension Columns Diverge From dbt / Snowflake~~ RESOLVED
+### 6. ~~Lakeflow Dimension Columns Diverge From dbt / Snowflake~~ RESOLVED
 
-Documented as an intentional design difference in the README under a new "Cross-Platform Design Notes" section. The DLT pipeline is designed as a self-contained analytical pipeline that exposes additional enriched columns on entity dimensions, while the core join keys and business keys remain identical across all platforms.
+Documented as an intentional design difference in the README under a new "Cross-Platform Design Notes" section. The Lakeflow pipeline is designed as a self-contained analytical pipeline that exposes additional enriched columns on entity dimensions, while the core join keys and business keys remain identical across all platforms.
 
 ---
 
@@ -63,9 +63,9 @@ sources:
 
 **Fix:** Add unknown/default records to `dim_menu_item` and `dim_ingredient` in all four platforms, matching the pattern used by the other dimensions.
 
-### 9. DLT Fiscal Quarter Logic Potentially Incorrect
+### 9. Lakeflow Fiscal Quarter Logic Potentially Incorrect
 
-In `databricks/dlt/gold/dimensions.py`, the fiscal quarter calculation:
+In `databricks/dlt/gold/dimensions/dim_date.py`, the fiscal quarter calculation:
 
 ```python
 when(month(col("full_date")) >= 10, quarter(col("full_date")) - 3)

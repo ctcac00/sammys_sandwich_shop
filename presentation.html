@@ -1560,12 +1560,12 @@ staged <span class="kw">as</span> (
       </div>
     </section>
 
-    <!-- ==================== SLIDE : DLT vs dbt ==================== -->
-    <section class="slide" role="group" aria-label="Databricks DLT vs dbt" style="order: 7;">
+    <!-- ==================== SLIDE : Lakeflow vs dbt ==================== -->
+    <section class="slide" role="group" aria-label="Databricks Lakeflow vs dbt" style="order: 7;">
       <div class="option-slide-wrap">
         <div class="option-header">
-          <h2>Databricks DLT <span>vs</span> dbt</h2>
-          <p>Quick takeaways from using DLT in practice</p>
+          <h2>Databricks Lakeflow <span>vs</span> dbt</h2>
+          <p>Quick takeaways from using Lakeflow in practice</p>
         </div>
 
         <div class="so-what">Lock-in compounds: each new pipeline raises the cost of ever moving off Databricks.</div>
@@ -1574,7 +1574,7 @@ staged <span class="kw">as</span> (
           <div class="chip-stack">
             <div class="chip-row neat">
               <span class="chip-label">Neat</span>
-              <p>DLT lets teams define models and tests together in a single pipeline flow.</p>
+              <p>Lakeflow lets teams define models and tests together in a single pipeline flow.</p>
             </div>
 
             <div class="chip-row tradeoff">
@@ -1584,27 +1584,27 @@ staged <span class="kw">as</span> (
 
             <div class="chip-row constraint">
               <span class="chip-label">Constraint</span>
-              <p>DLT is Databricks-only, so it reduces platform flexibility.</p>
+              <p>Lakeflow Declarative Pipelines is Databricks-only, so it reduces platform flexibility.</p>
             </div>
 
             <div class="chip-row cost">
               <span class="chip-label">Cost risk</span>
-              <p>Without careful configuration and run strategy, DLT can become less cost-efficient.</p>
+              <p>Without careful configuration and run strategy, Lakeflow can become less cost-efficient.</p>
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ==================== CODE COMPARE: DLT vs dbt ==================== -->
-    <section class="slide" role="group" aria-label="DLT Code Compare" style="order: 6;">
+    <!-- ==================== CODE COMPARE: Lakeflow vs dbt ==================== -->
+    <section class="slide" role="group" aria-label="Lakeflow Code Compare" style="order: 6;">
       <div class="code-comparison">
         <div class="code-comparison-header">
-          <h2>The Code: <span class="accent-amber">DLT</span> vs <span class="accent-teal">dbt</span></h2>
+          <h2>The Code: <span class="accent-amber">Lakeflow</span> vs <span class="accent-teal">dbt</span></h2>
           <p>Building <code>stg_orders</code> &mdash; closest comparison, but key differences</p>
         </div>
 
-        <!-- Native: Delta Live Tables -->
+        <!-- Native: Lakeflow Declarative Pipelines -->
         <div class="code-panel native-panel">
           <div class="code-metric amber">
             <span class="metric-number">Python</span>
@@ -1612,27 +1612,27 @@ staged <span class="kw">as</span> (
           </div>
           <div class="code-block">
             <pre><span class="cm"># dlt/silver/staging/stg_orders.py</span>
-<span class="kw">import</span> dlt
+<span class="kw">from</span> pyspark <span class="kw">import</span> pipelines <span class="kw">as</span> dp
 <span class="kw">from</span> pyspark.sql.functions <span class="kw">import</span> (
     col, trim, to_date, coalesce, lit
 )
 <span class="kw">from</span> pyspark.sql.types <span class="kw">import</span> DoubleType
 
-<span class="dec">@dlt.table</span>(
+<span class="dec">@dp.materialized_view</span>(
     name=<span class="str">"stg_orders"</span>,
     comment=<span class="str">"Cleaned and typed order data"</span>,
     table_properties={<span class="str">"quality"</span>: <span class="str">"silver"</span>}
 )
-<span class="dec">@dlt.expect_or_drop</span>(
+<span class="dec">@dp.expect_or_drop</span>(
     <span class="str">"valid_order_id"</span>,
     <span class="str">"order_id IS NOT NULL"</span>
 )
-<span class="dec">@dlt.expect</span>(
+<span class="dec">@dp.expect</span>(
     <span class="str">"valid_total"</span>, <span class="str">"total_amount &gt;= 0"</span>
 )
 <span class="kw">def</span> <span class="fn">stg_orders</span>():
     <span class="kw">return</span> (
-        dlt.read(<span class="str">"bronze_orders"</span>)
+        spark.read.table(<span class="str">"bronze_orders"</span>)
         .select(
             col(<span class="str">"order_id"</span>),
             trim(col(<span class="str">"customer_id"</span>))
@@ -1647,7 +1647,7 @@ staged <span class="kw">as</span> (
     )</pre>
           </div>
           <div class="code-panel-header">
-            <h3 class="accent-amber">Delta Live Tables</h3>
+            <h3 class="accent-amber">Lakeflow Declarative Pipelines</h3>
           </div>
         </div>
 
@@ -1710,7 +1710,7 @@ staged <span class="kw">as</span> (
           </li>
           <li class="summary-item">
             <span class="summary-item-label">3</span>
-            <p><strong>DLT tradeoff:</strong> You get built-in expectations and pipeline flow, but it is Python-first
+            <p><strong>Lakeflow tradeoff:</strong> You get built-in expectations and pipeline flow, but it is Python-first
               and Databricks-specific.</p>
           </li>
           <li class="summary-item">
@@ -1755,8 +1755,8 @@ staged <span class="kw">as</span> (
         'SP vs dbt',
         'NB: Code',
         'NB vs dbt',
-        'DLT: Code',
-        'DLT vs dbt',
+        'Lakeflow: Code',
+        'Lakeflow vs dbt',
         'Summary'
       ];
 
@@ -1956,7 +1956,7 @@ staged <span class="kw">as</span> (
       var PIPES = [
         { key: 'sp', color: '#29B5E8', label: 'Stored Procs' },
         { key: 'nb', color: '#FF3621', label: 'Notebooks' },
-        { key: 'dlt', color: '#FF6B35', label: 'DLT' },
+        { key: 'dlt', color: '#FF6B35', label: 'Lakeflow' },
         { key: 'dbt', color: '#4ecdc4', label: 'dbt' }
       ];
 

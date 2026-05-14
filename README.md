@@ -48,7 +48,7 @@ Sammy's Sandwich Shop is a fictional sandwich business with multiple locations. 
     │   ├── 04_tests/        # Data quality tests
     │   └── orchestration/   # Pipeline runner
     │
-    └── dlt/                 # Delta Live Tables (declarative)
+    └── dlt/                 # Lakeflow Declarative Pipelines
         ├── bronze/          # Raw ingestion tables
         ├── silver/          # Staging and enriched tables
         └── gold/            # Dimensions, facts, report views
@@ -99,31 +99,31 @@ See [databricks/notebooks/README.md](databricks/notebooks/README.md) for setup a
 # Run orchestration/run_full_pipeline.py
 ```
 
-### Databricks Delta Live Tables (DLT)
+### Databricks Lakeflow Declarative Pipelines
 
-Declarative pipeline implementation using Delta Live Tables. Same transformations as the notebooks version but with automatic dependency management and built-in data quality.
+Declarative pipeline implementation using Lakeflow Declarative Pipelines. Same transformations as the notebooks version but with automatic dependency management and built-in data quality.
 
 See [databricks/dlt/README.md](databricks/dlt/README.md) for setup and documentation.
 
 **Features:**
 - 7 notebooks (vs 65+ in traditional approach)
 - Automatic DAG-based execution
-- Built-in `@dlt.expect` data quality expectations
+- Built-in `@dp.expect` data quality expectations
 - Pipeline UI with lineage visualization
 
 ```bash
-# Create DLT pipeline in Databricks UI
+# Create Lakeflow pipeline in Databricks UI
 # Add all notebooks from databricks/dlt/
 # Set target catalog and schema
 ```
 
 ### Implementation Comparison
 
-| Aspect | Snowflake | dbt | Databricks Notebooks | Databricks DLT |
-|--------|-----------|-----|---------------------|----------------|
+| Aspect | Snowflake | dbt | Databricks Notebooks | Lakeflow Declarative Pipelines |
+|--------|-----------|-----|---------------------|-------------------------------|
 | Language | SQL + JS | SQL (Jinja) | PySpark | PySpark |
 | Orchestration | Stored procs | dbt CLI | Manual scripts | Automatic |
-| Data Quality | Custom framework | dbt tests | Test notebooks | `@dlt.expect` |
+| Data Quality | Custom framework | dbt tests | Test notebooks | `@dp.expect` |
 | Execution | Snowflake engine | Snowflake engine | Spark cluster | Spark cluster |
 | SCD Strategy | Type 2 ready (surrogate keys via AUTOINCREMENT) | Type 1 (hash-based surrogate keys) | Type 1 (hash-based surrogate keys) | Type 1 (hash-based surrogate keys) |
 | Best For | SQL-centric teams | Analytics engineers | Custom Spark logic | Managed pipelines |
@@ -133,7 +133,7 @@ See [databricks/dlt/README.md](databricks/dlt/README.md) for setup and documenta
 All platforms produce the **same** dimensional model (dimensions, facts, and reports) from the same source data. There are intentional per-platform differences:
 
 - **Surrogate keys**: Snowflake uses `AUTOINCREMENT` integers with SCD Type 2 columns (`expiration_date`), making it ready for historical tracking. The other platforms use deterministic `md5()` hashes with SCD Type 1 (current state only).
-- **Dimension columns**: The Databricks DLT implementation exposes additional enriched columns on some entity dimensions (e.g., `dim_location` includes `city_state`, `district`; `dim_employee` includes `tenure_group`, `tenure_years`) that go beyond the dbt/Snowflake schemas. This reflects DLT's design as a self-contained analytical pipeline. The core join keys and business keys remain identical.
+- **Dimension columns**: The Lakeflow Declarative Pipelines implementation exposes additional enriched columns on some entity dimensions (e.g., `dim_location` includes `city_state`, `district`; `dim_employee` includes `tenure_group`, `tenure_years`) that go beyond the dbt/Snowflake schemas. This reflects Lakeflow's design as a self-contained analytical pipeline. The core join keys and business keys remain identical.
 - **Raw layer metadata**: The Snowflake raw tables include `_loaded_at` and `_source_file` audit columns added on ingestion. The Databricks bronze layers do not include these columns since data is loaded directly from CSV files.
 
 ## Data Model

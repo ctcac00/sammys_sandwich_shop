@@ -1,5 +1,5 @@
 {
-  "name": "sammys_sandwich_shop_dlt",
+  "name": "sammys_sandwich_shop_lakeflow_pipelines",
   "catalog": "sammys_sandwich_shop",
   "target": "dlt",
   "libraries": [

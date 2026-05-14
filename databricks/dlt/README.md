@@ -1,12 +1,12 @@
-# Sammy's Sandwich Shop - Delta Live Tables Pipeline
+# Sammy's Sandwich Shop - Lakeflow Declarative Pipelines
 
-This directory contains a Delta Live Tables (DLT) implementation of the Sammy's Sandwich Shop data warehouse. DLT provides a declarative approach to building data pipelines with automatic dependency management, built-in data quality, and simplified operations.
+This directory contains a Lakeflow Declarative Pipelines implementation of the Sammy's Sandwich Shop data warehouse. Lakeflow provides a declarative approach to building data pipelines with automatic dependency management, built-in data quality, and simplified operations.
 
 ## Architecture Overview
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────┐
-│                         Delta Live Tables Pipeline                         │
+│                      Lakeflow Declarative Pipelines                        │
 ├────────────────────────────────────────────────────────────────────────────┤
 │                                                                            │
 │  ┌──────────────┐    ┌──────────────┐    ┌──────────────────────────────┐  │
@@ -29,12 +29,12 @@ This directory contains a Delta Live Tables (DLT) implementation of the Sammy's 
 └────────────────────────────────────────────────────────────────────────────┘
 ```
 
-## DLT vs Traditional Notebooks
+## Lakeflow vs Traditional Notebooks
 
-| Feature | Traditional Notebooks | Delta Live Tables |
-|---------|----------------------|-------------------|
-| Dependency Management | Manual orchestration | Automatic based on `dlt.read()` |
-| Data Quality | Separate test notebooks | Built-in `@dlt.expect` decorators |
+| Feature | Traditional Notebooks | Lakeflow Declarative Pipelines |
+|---------|----------------------|-------------------------------|
+| Dependency Management | Manual orchestration | Automatic based on `spark.read.table()` |
+| Data Quality | Separate test notebooks | Built-in `@dp.expect` decorators |
 | Execution Order | Explicit sequencing | DAG-based automatic ordering |
 | Error Handling | Custom retry logic | Built-in retry and recovery |
 | Monitoring | Manual logging | Pipeline UI with lineage |
@@ -112,17 +112,17 @@ Raw data ingestion with metadata tracking:
 
 ## Data Quality Expectations
 
-DLT provides three types of expectations:
+Lakeflow provides three types of expectations:
 
 ```python
 # Warn only - log violations but keep rows
-@dlt.expect("valid_email", "email LIKE '%@%.%'")
+@dp.expect("valid_email", "email LIKE '%@%.%'")
 
 # Drop rows that fail validation
-@dlt.expect_or_drop("valid_customer_id", "customer_id IS NOT NULL")
+@dp.expect_or_drop("valid_customer_id", "customer_id IS NOT NULL")
 
 # Fail pipeline if expectation fails
-@dlt.expect_or_fail("critical_check", "total_amount >= 0")
+@dp.expect_or_fail("critical_check", "total_amount >= 0")
 ```
 
 ### Implemented Expectations
@@ -142,11 +142,11 @@ DLT provides three types of expectations:
 
 ### Creating the Pipeline
 
-1. Go to **Workflows > Delta Live Tables > Create Pipeline**
+1. Go to **Workflows > Pipelines > Create Pipeline**
 
 2. Configure settings:
    ```
-   Pipeline name: sammys_sandwich_shop_dlt
+   Pipeline name: sammys_sandwich_shop_lakeflow_pipelines
    Product edition: Advanced (recommended) or Pro
    Pipeline mode: Triggered (batch) or Continuous (streaming)
    
@@ -175,7 +175,7 @@ You can also create the pipeline using the API with this configuration:
 
 ```json
 {
-  "name": "sammys_sandwich_shop_dlt",
+  "name": "sammys_sandwich_shop_lakeflow_pipelines",
   "catalog": "sammys_sandwich_shop",
   "target": "dlt",
   "libraries": [
@@ -234,14 +234,14 @@ You can also create the pipeline using the API with this configuration:
 ```python
 # Create a job to run the pipeline on a schedule
 # Workflows > Jobs > Create Job
-# Task type: Delta Live Tables pipeline
+# Task type: Lakeflow Declarative Pipelines
 # Schedule: Daily at 2:00 AM (or as needed)
 ```
 
 ## Monitoring
 
 ### Pipeline UI
-The DLT pipeline UI provides:
+The Lakeflow pipeline UI provides:
 - **DAG visualization** - See all table dependencies
 - **Data quality metrics** - Pass/fail rates for expectations
 - **Performance metrics** - Processing time, rows processed
@@ -257,7 +257,7 @@ ORDER BY timestamp DESC
 
 ## Comparison with Notebooks Version
 
-### Advantages of DLT
+### Advantages of Lakeflow Declarative Pipelines
 1. **Simpler code** - No manual orchestration or error handling
 2. **Built-in quality** - Data quality as first-class feature
 3. **Better observability** - Pipeline UI with full lineage
@@ -265,7 +265,7 @@ ORDER BY timestamp DESC
 5. **Schema evolution** - Automatic schema management
 
 ### When to Use Notebooks Instead
-1. Complex custom logic that doesn't fit DLT patterns
+1. Complex custom logic that doesn't fit Lakeflow patterns
 2. Need for interactive development and debugging
 3. Integration with external systems in complex ways
 4. One-off data exploration or ad-hoc analysis
@@ -281,7 +281,7 @@ ORDER BY timestamp DESC
 
 1. Upload all notebooks to your Databricks workspace
 2. Update `config.py` with your data path if different
-3. Create the DLT pipeline in the Databricks UI
+3. Create the Lakeflow pipeline in the Databricks UI
 4. Add all source notebooks to the pipeline
 5. Run the pipeline in development mode first
 6. Validate results and promote to production
@@ -292,7 +292,7 @@ ORDER BY timestamp DESC
 
 **"Table not found" errors:**
 - Ensure all notebooks are included in the pipeline
-- Check that `dlt.read()` references match table names
+- Check that `spark.read.table()` references match table names
 
 **Data quality failures:**
 - Check the event log for specific violation details
