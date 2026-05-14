@@ -5,7 +5,7 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import (
     col, coalesce, lit, when, current_timestamp, dayofweek, hour,
     sum as spark_sum, count
@@ -13,14 +13,14 @@ from pyspark.sql.functions import (
 
 # COMMAND ----------
 
-@dlt.table(
+@dp.materialized_view(
     name="int_orders",
     comment="Orders with item counts and derived flags",
     table_properties={"quality": "silver"}
 )
 def int_orders():
-    orders = dlt.read("stg_orders")
-    order_items = dlt.read("stg_order_items")
+    orders = spark.read.table("stg_orders")
+    order_items = spark.read.table("stg_order_items")
     
     # Aggregate order items
     item_counts = (

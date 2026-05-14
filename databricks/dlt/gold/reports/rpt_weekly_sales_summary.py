@@ -5,20 +5,20 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import col, count, avg, sum as spark_sum
 from pyspark.sql.window import Window
 
 # COMMAND ----------
 
-@dlt.view(
+@dp.temporary_view(
     name="rpt_weekly_sales_summary",
     comment="Weekly aggregated sales metrics"
 )
 def rpt_weekly_sales_summary():
-    fds = dlt.read("fct_daily_summary")
-    dd = dlt.read("dim_date")
-    dl = dlt.read("dim_location").filter(col("is_current") == True)
+    fds = spark.read.table("fct_daily_summary")
+    dd = spark.read.table("dim_date")
+    dl = spark.read.table("dim_location").filter(col("is_current") == True)
     
     return (
         fds

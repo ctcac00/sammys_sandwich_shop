@@ -5,7 +5,7 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import (
     col, when, current_timestamp, count, countDistinct, avg,
     sum as spark_sum, max as spark_max
@@ -13,13 +13,13 @@ from pyspark.sql.functions import (
 
 # COMMAND ----------
 
-@dlt.table(
+@dp.materialized_view(
     name="fct_daily_summary",
     comment="Daily aggregated sales metrics per location",
     table_properties={"quality": "gold"}
 )
 def fct_daily_summary():
-    fct_sales = dlt.read("fct_sales")
+    fct_sales = spark.read.table("fct_sales")
     
     return (
         fct_sales

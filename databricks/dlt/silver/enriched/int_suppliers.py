@@ -5,21 +5,21 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import (
     col, concat_ws, coalesce, lit, current_timestamp, count
 )
 
 # COMMAND ----------
 
-@dlt.table(
+@dp.materialized_view(
     name="int_suppliers",
     comment="Suppliers with ingredient counts",
     table_properties={"quality": "silver"}
 )
 def int_suppliers():
-    suppliers = dlt.read("stg_suppliers")
-    ingredients = dlt.read("stg_ingredients")
+    suppliers = spark.read.table("stg_suppliers")
+    ingredients = spark.read.table("stg_ingredients")
     
     # Count ingredients per supplier
     ingredient_counts = (

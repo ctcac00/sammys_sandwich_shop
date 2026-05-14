@@ -5,18 +5,18 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import col
 
 # COMMAND ----------
 
-@dlt.view(
+@dp.temporary_view(
     name="rpt_customers_at_risk",
     comment="Customers showing signs of churn"
 )
 def rpt_customers_at_risk():
-    fca = dlt.read("fct_customer_activity")
-    dc = dlt.read("dim_customer").filter(col("is_current") == True)
+    fca = spark.read.table("fct_customer_activity")
+    dc = spark.read.table("dim_customer").filter(col("is_current") == True)
     
     return (
         fca

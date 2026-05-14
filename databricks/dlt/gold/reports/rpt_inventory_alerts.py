@@ -5,19 +5,19 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import col, when, lit
 
 # COMMAND ----------
 
-@dlt.view(
+@dp.temporary_view(
     name="rpt_inventory_alerts",
     comment="Items needing reorder or expiring soon"
 )
 def rpt_inventory_alerts():
-    fi = dlt.read("fct_inventory_snapshot")
-    dl = dlt.read("dim_location").filter(col("is_current") == True)
-    di = dlt.read("dim_ingredient").filter(col("is_current") == True)
+    fi = spark.read.table("fct_inventory_snapshot")
+    dl = spark.read.table("dim_location").filter(col("is_current") == True)
+    di = spark.read.table("dim_ingredient").filter(col("is_current") == True)
     
     return (
         fi

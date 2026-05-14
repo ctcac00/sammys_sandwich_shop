@@ -5,19 +5,19 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import col, current_timestamp
 
 # COMMAND ----------
 
-@dlt.table(
+@dp.materialized_view(
     name="int_ingredients",
     comment="Ingredient data with supplier info",
     table_properties={"quality": "silver"}
 )
 def int_ingredients():
-    ingredients = dlt.read("stg_ingredients")
-    suppliers = dlt.read("stg_suppliers")
+    ingredients = spark.read.table("stg_ingredients")
+    suppliers = spark.read.table("stg_suppliers")
     
     return (
         ingredients.alias("i")

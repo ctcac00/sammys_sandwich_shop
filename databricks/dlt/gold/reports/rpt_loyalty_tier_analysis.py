@@ -5,18 +5,18 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import col, count, avg, sum as spark_sum
 
 # COMMAND ----------
 
-@dlt.view(
+@dp.temporary_view(
     name="rpt_loyalty_tier_analysis",
     comment="Performance metrics by loyalty tier"
 )
 def rpt_loyalty_tier_analysis():
-    fca = dlt.read("fct_customer_activity")
-    dc = dlt.read("dim_customer").filter(col("is_current") == True)
+    fca = spark.read.table("fct_customer_activity")
+    dc = spark.read.table("dim_customer").filter(col("is_current") == True)
     
     return (
         fca

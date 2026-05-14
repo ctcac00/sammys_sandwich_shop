@@ -5,20 +5,20 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import (
     col, count, avg, sum as spark_sum, countDistinct
 )
 
 # COMMAND ----------
 
-@dlt.view(
+@dp.temporary_view(
     name="rpt_location_performance",
     comment="Location performance metrics"
 )
 def rpt_location_performance():
-    fds = dlt.read("fct_daily_summary")
-    dl = dlt.read("dim_location").filter(col("is_current") == True)
+    fds = spark.read.table("fct_daily_summary")
+    dl = spark.read.table("dim_location").filter(col("is_current") == True)
     
     return (
         fds

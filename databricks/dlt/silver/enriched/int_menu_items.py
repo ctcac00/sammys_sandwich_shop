@@ -5,19 +5,19 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import col, when, current_timestamp
 
 # COMMAND ----------
 
-@dlt.table(
+@dp.materialized_view(
     name="int_menu_items",
     comment="Menu item data with profit margins",
     table_properties={"quality": "silver"}
 )
 def int_menu_items():
     return (
-        dlt.read("stg_menu_items")
+        spark.read.table("stg_menu_items")
         .select(
             col("menu_item_id"),
             col("item_name"),

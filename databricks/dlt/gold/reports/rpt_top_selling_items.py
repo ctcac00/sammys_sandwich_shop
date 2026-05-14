@@ -5,18 +5,18 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import col
 
 # COMMAND ----------
 
-@dlt.view(
+@dp.temporary_view(
     name="rpt_top_selling_items",
     comment="Most popular menu items by quantity sold"
 )
 def rpt_top_selling_items():
-    fmp = dlt.read("fct_menu_item_performance")
-    dm = dlt.read("dim_menu_item").filter(col("is_current") == True)
+    fmp = spark.read.table("fct_menu_item_performance")
+    dm = spark.read.table("dim_menu_item").filter(col("is_current") == True)
     
     return (
         fmp

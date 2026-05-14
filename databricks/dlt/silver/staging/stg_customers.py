@@ -6,7 +6,7 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import (
     col, trim, lower, upper, initcap, to_date, coalesce, lit, when
 )
@@ -14,16 +14,16 @@ from pyspark.sql.types import IntegerType
 
 # COMMAND ----------
 
-@dlt.table(
+@dp.materialized_view(
     name="stg_customers",
     comment="Cleaned and typed customer data",
     table_properties={"quality": "silver"}
 )
-@dlt.expect_or_drop("valid_customer_id", "customer_id IS NOT NULL")
-@dlt.expect("valid_email_format", "email IS NULL OR email LIKE '%@%.%'")
+@dp.expect_or_drop("valid_customer_id", "customer_id IS NOT NULL")
+@dp.expect("valid_email_format", "email IS NULL OR email LIKE '%@%.%'")
 def stg_customers():
     return (
-        dlt.read("bronze_customers")
+        spark.read.table("bronze_customers")
         .select(
             col("customer_id"),
             initcap(trim(col("first_name"))).alias("first_name"),

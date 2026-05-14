@@ -5,21 +5,21 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import (
     col, when, lit, datediff, current_date, current_timestamp
 )
 
 # COMMAND ----------
 
-@dlt.table(
+@dp.materialized_view(
     name="int_inventory",
     comment="Inventory with reorder status",
     table_properties={"quality": "silver"}
 )
 def int_inventory():
-    inventory = dlt.read("stg_inventory")
-    ingredients = dlt.read("int_ingredients")
+    inventory = spark.read.table("stg_inventory")
+    ingredients = spark.read.table("int_ingredients")
     
     return (
         inventory.alias("i")

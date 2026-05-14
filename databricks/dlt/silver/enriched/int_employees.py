@@ -5,21 +5,21 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import (
     col, concat_ws, datediff, current_date, current_timestamp, floor
 )
 
 # COMMAND ----------
 
-@dlt.table(
+@dp.materialized_view(
     name="int_employees",
     comment="Employee data with derived fields",
     table_properties={"quality": "silver"}
 )
 def int_employees():
     return (
-        dlt.read("stg_employees")
+        spark.read.table("stg_employees")
         .select(
             col("employee_id"),
             col("first_name"),

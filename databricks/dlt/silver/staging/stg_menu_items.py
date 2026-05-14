@@ -6,7 +6,7 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import (
     col, trim, upper, lit, when
 )
@@ -14,16 +14,16 @@ from pyspark.sql.types import IntegerType, DoubleType
 
 # COMMAND ----------
 
-@dlt.table(
+@dp.materialized_view(
     name="stg_menu_items",
     comment="Cleaned and typed menu item data",
     table_properties={"quality": "silver"}
 )
-@dlt.expect_or_drop("valid_menu_item_id", "menu_item_id IS NOT NULL")
-@dlt.expect("positive_price", "price > 0")
+@dp.expect_or_drop("valid_menu_item_id", "menu_item_id IS NOT NULL")
+@dp.expect("positive_price", "price > 0")
 def stg_menu_items():
     return (
-        dlt.read("bronze_menu_items")
+        spark.read.table("bronze_menu_items")
         .select(
             col("menu_item_id"),
             trim(col("item_name")).alias("item_name"),

@@ -5,7 +5,7 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import (
     col, when, current_timestamp, datediff,
     round as spark_round, sum as spark_sum, count, countDistinct, avg,
@@ -15,15 +15,15 @@ from pyspark.sql.window import Window
 
 # COMMAND ----------
 
-@dlt.table(
+@dp.materialized_view(
     name="fct_customer_activity",
     comment="Customer lifetime metrics and RFM segmentation",
     table_properties={"quality": "gold"}
 )
 def fct_customer_activity():
-    fct_sales = dlt.read("fct_sales").filter(~col("is_guest_order"))
-    fct_line_items = dlt.read("fct_sales_line_item")
-    dim_date = dlt.read("dim_date")
+    fct_sales = spark.read.table("fct_sales").filter(~col("is_guest_order"))
+    fct_line_items = spark.read.table("fct_sales_line_item")
+    dim_date = spark.read.table("dim_date")
     
     # Get max date from sales
     max_date = fct_sales.join(dim_date, "date_key").agg(spark_max("full_date").alias("max_date"))

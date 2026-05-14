@@ -5,7 +5,7 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import (
     col, count, avg, dense_rank, sum as spark_sum
 )
@@ -13,13 +13,13 @@ from pyspark.sql.window import Window
 
 # COMMAND ----------
 
-@dlt.view(
+@dp.temporary_view(
     name="rpt_location_ranking",
     comment="Location performance with rankings"
 )
 def rpt_location_ranking():
-    fds = dlt.read("fct_daily_summary")
-    dl = dlt.read("dim_location").filter(col("is_current") == True)
+    fds = spark.read.table("fct_daily_summary")
+    dl = spark.read.table("dim_location").filter(col("is_current") == True)
     
     location_metrics = (
         fds

@@ -5,7 +5,7 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import (
     col, lit, when, current_timestamp, current_date, md5
 )
@@ -17,13 +17,13 @@ from pyspark.sql.types import StringType
 
 # COMMAND ----------
 
-@dlt.table(
+@dp.materialized_view(
     name="dim_location",
     comment="Location dimension with geography and manager info",
     table_properties={"quality": "gold"}
 )
 def dim_location():
-    locations = dlt.read("int_locations")
+    locations = spark.read.table("int_locations")
     
     location_dim = (
         locations

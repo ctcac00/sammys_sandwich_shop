@@ -5,19 +5,19 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import col, dense_rank
 from pyspark.sql.window import Window
 
 # COMMAND ----------
 
-@dlt.view(
+@dp.temporary_view(
     name="rpt_top_customers",
     comment="Top customers by revenue"
 )
 def rpt_top_customers():
-    fca = dlt.read("fct_customer_activity")
-    dc = dlt.read("dim_customer").filter(col("is_current") == True)
+    fca = spark.read.table("fct_customer_activity")
+    dc = spark.read.table("dim_customer").filter(col("is_current") == True)
     
     return (
         fca

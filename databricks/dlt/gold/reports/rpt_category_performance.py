@@ -5,18 +5,18 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import col, count, avg, sum as spark_sum
 
 # COMMAND ----------
 
-@dlt.view(
+@dp.temporary_view(
     name="rpt_category_performance",
     comment="Menu category performance summary"
 )
 def rpt_category_performance():
-    fmp = dlt.read("fct_menu_item_performance")
-    dm = dlt.read("dim_menu_item").filter(col("is_current") == True)
+    fmp = spark.read.table("fct_menu_item_performance")
+    dm = spark.read.table("dim_menu_item").filter(col("is_current") == True)
     
     return (
         fmp

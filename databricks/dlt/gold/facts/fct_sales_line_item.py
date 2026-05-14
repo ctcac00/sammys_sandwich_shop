@@ -5,21 +5,21 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import col, current_timestamp
 
 # COMMAND ----------
 
-@dlt.table(
+@dp.materialized_view(
     name="fct_sales_line_item",
     comment="Order line item detail fact table with profitability",
     table_properties={"quality": "gold"}
 )
 def fct_sales_line_item():
-    order_items = dlt.read("int_order_items")
-    orders = dlt.read("int_orders").filter(col("order_status") == "Completed")
-    dim_menu_item = dlt.read("dim_menu_item").filter(col("is_current") == True)
-    fct_sales = dlt.read("fct_sales")
+    order_items = spark.read.table("int_order_items")
+    orders = spark.read.table("int_orders").filter(col("order_status") == "Completed")
+    dim_menu_item = spark.read.table("dim_menu_item").filter(col("is_current") == True)
+    fct_sales = spark.read.table("fct_sales")
     
     return (
         order_items.alias("oi")

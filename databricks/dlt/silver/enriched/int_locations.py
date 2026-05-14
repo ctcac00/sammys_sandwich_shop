@@ -5,21 +5,21 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import (
     col, concat_ws, datediff, current_date, current_timestamp, coalesce, lit
 )
 
 # COMMAND ----------
 
-@dlt.table(
+@dp.materialized_view(
     name="int_locations",
     comment="Location data with manager info",
     table_properties={"quality": "silver"}
 )
 def int_locations():
-    locations = dlt.read("stg_locations")
-    employees = dlt.read("int_employees")
+    locations = spark.read.table("stg_locations")
+    employees = spark.read.table("int_employees")
     
     return (
         locations.alias("l")

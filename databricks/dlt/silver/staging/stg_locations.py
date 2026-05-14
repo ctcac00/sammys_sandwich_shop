@@ -6,7 +6,7 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import (
     col, trim, upper, to_date, lit, when
 )
@@ -14,15 +14,15 @@ from pyspark.sql.types import IntegerType
 
 # COMMAND ----------
 
-@dlt.table(
+@dp.materialized_view(
     name="stg_locations",
     comment="Cleaned and typed location data",
     table_properties={"quality": "silver"}
 )
-@dlt.expect_or_drop("valid_location_id", "location_id IS NOT NULL")
+@dp.expect_or_drop("valid_location_id", "location_id IS NOT NULL")
 def stg_locations():
     return (
-        dlt.read("bronze_locations")
+        spark.read.table("bronze_locations")
         .select(
             col("location_id"),
             trim(col("location_name")).alias("location_name"),

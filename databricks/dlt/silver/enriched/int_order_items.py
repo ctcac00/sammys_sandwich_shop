@@ -5,19 +5,19 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import col, current_timestamp
 
 # COMMAND ----------
 
-@dlt.table(
+@dp.materialized_view(
     name="int_order_items",
     comment="Order items with menu item details",
     table_properties={"quality": "silver"}
 )
 def int_order_items():
-    order_items = dlt.read("stg_order_items")
-    menu_items = dlt.read("int_menu_items")
+    order_items = spark.read.table("stg_order_items")
+    menu_items = spark.read.table("int_menu_items")
     
     return (
         order_items.alias("oi")

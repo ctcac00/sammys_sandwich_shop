@@ -5,7 +5,7 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import (
     col, lit, when, coalesce, current_timestamp, hour, minute, year, month, dayofmonth,
     round as spark_round, md5
@@ -18,20 +18,20 @@ from pyspark.sql.types import IntegerType, StringType
 
 # COMMAND ----------
 
-@dlt.table(
+@dp.materialized_view(
     name="fct_sales",
     comment="Order-level sales fact table",
     table_properties={"quality": "gold"}
 )
-@dlt.expect("valid_order_id", "order_id IS NOT NULL")
-@dlt.expect("valid_date_key", "date_key IS NOT NULL")
+@dp.expect("valid_order_id", "order_id IS NOT NULL")
+@dp.expect("valid_date_key", "date_key IS NOT NULL")
 def fct_sales():
-    orders = dlt.read("int_orders").filter(col("order_status") == "Completed")
-    dim_customer = dlt.read("dim_customer").filter(col("is_current") == True)
-    dim_employee = dlt.read("dim_employee").filter(col("is_current") == True)
-    dim_location = dlt.read("dim_location").filter(col("is_current") == True)
-    dim_payment = dlt.read("dim_payment_method")
-    dim_order_type = dlt.read("dim_order_type")
+    orders = spark.read.table("int_orders").filter(col("order_status") == "Completed")
+    dim_customer = spark.read.table("dim_customer").filter(col("is_current") == True)
+    dim_employee = spark.read.table("dim_employee").filter(col("is_current") == True)
+    dim_location = spark.read.table("dim_location").filter(col("is_current") == True)
+    dim_payment = spark.read.table("dim_payment_method")
+    dim_order_type = spark.read.table("dim_order_type")
     
     # Get unknown customer SK for guest orders
     unknown_customer_sk = md5(lit(UNKNOWN_CUSTOMER_ID))

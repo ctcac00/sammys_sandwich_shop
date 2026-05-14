@@ -5,7 +5,7 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import current_timestamp, lit
 
 # COMMAND ----------
@@ -14,7 +14,7 @@ from pyspark.sql.functions import current_timestamp, lit
 
 # COMMAND ----------
 
-@dlt.table(
+@dp.materialized_view(
     name="bronze_customers",
     comment="Raw customer data from CSV source",
     table_properties={"quality": "bronze"}

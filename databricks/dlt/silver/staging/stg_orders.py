@@ -6,7 +6,7 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import (
     col, trim, to_date, coalesce, lit
 )
@@ -14,16 +14,16 @@ from pyspark.sql.types import DoubleType
 
 # COMMAND ----------
 
-@dlt.table(
+@dp.materialized_view(
     name="stg_orders",
     comment="Cleaned and typed order data",
     table_properties={"quality": "silver"}
 )
-@dlt.expect_or_drop("valid_order_id", "order_id IS NOT NULL")
-@dlt.expect("valid_total", "total_amount >= 0")
+@dp.expect_or_drop("valid_order_id", "order_id IS NOT NULL")
+@dp.expect("valid_total", "total_amount >= 0")
 def stg_orders():
     return (
-        dlt.read("bronze_orders")
+        spark.read.table("bronze_orders")
         .select(
             col("order_id"),
             trim(col("customer_id")).alias("customer_id"),

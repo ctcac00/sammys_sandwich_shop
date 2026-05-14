@@ -5,7 +5,7 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import (
     col, current_timestamp, count, countDistinct, avg, dense_rank,
     sum as spark_sum
@@ -14,14 +14,14 @@ from pyspark.sql.window import Window
 
 # COMMAND ----------
 
-@dlt.table(
+@dp.materialized_view(
     name="fct_menu_item_performance",
     comment="Menu item performance metrics and rankings",
     table_properties={"quality": "gold"}
 )
 def fct_menu_item_performance():
-    fct_line_items = dlt.read("fct_sales_line_item")
-    dim_menu_item = dlt.read("dim_menu_item").filter(col("is_current") == True)
+    fct_line_items = spark.read.table("fct_sales_line_item")
+    dim_menu_item = spark.read.table("dim_menu_item").filter(col("is_current") == True)
     
     # Menu item aggregates
     item_metrics = (

@@ -5,18 +5,18 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import col, count, countDistinct, avg, sum as spark_sum
 
 # COMMAND ----------
 
-@dlt.view(
+@dp.temporary_view(
     name="rpt_company_daily_totals",
     comment="Company-wide daily totals across all locations"
 )
 def rpt_company_daily_totals():
-    fds = dlt.read("fct_daily_summary")
-    dd = dlt.read("dim_date")
+    fds = spark.read.table("fct_daily_summary")
+    dd = spark.read.table("dim_date")
     
     return (
         fds

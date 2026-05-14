@@ -5,7 +5,7 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import (
     col, lit, when, current_timestamp, current_date, md5
 )
@@ -17,13 +17,13 @@ from pyspark.sql.types import StringType
 
 # COMMAND ----------
 
-@dlt.table(
+@dp.materialized_view(
     name="dim_employee",
     comment="Employee dimension with tenure and role info",
     table_properties={"quality": "gold"}
 )
 def dim_employee():
-    employees = dlt.read("int_employees")
+    employees = spark.read.table("int_employees")
     
     employee_dim = (
         employees

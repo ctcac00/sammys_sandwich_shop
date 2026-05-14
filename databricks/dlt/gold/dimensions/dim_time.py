@@ -5,13 +5,13 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import col, when, lit
 from pyspark.sql.types import IntegerType
 
 # COMMAND ----------
 
-@dlt.table(
+@dp.materialized_view(
     name="dim_time",
     comment="Time of day dimension",
     table_properties={"quality": "gold"}

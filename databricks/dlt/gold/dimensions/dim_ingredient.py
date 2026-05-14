@@ -5,7 +5,7 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import (
     col, lit, current_timestamp, current_date, md5
 )
@@ -13,14 +13,14 @@ from pyspark.sql.types import StringType
 
 # COMMAND ----------
 
-@dlt.table(
+@dp.materialized_view(
     name="dim_ingredient",
     comment="Ingredient dimension with supplier and cost info",
     table_properties={"quality": "gold"}
 )
 def dim_ingredient():
     return (
-        dlt.read("int_ingredients")
+        spark.read.table("int_ingredients")
         .select(
             md5(col("ingredient_id").cast(StringType())).alias("ingredient_sk"),
             col("ingredient_id"),

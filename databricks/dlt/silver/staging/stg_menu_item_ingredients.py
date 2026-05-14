@@ -6,21 +6,21 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import col, trim
 from pyspark.sql.types import DoubleType
 
 # COMMAND ----------
 
-@dlt.table(
+@dp.materialized_view(
     name="stg_menu_item_ingredients",
     comment="Cleaned menu item to ingredient mappings",
     table_properties={"quality": "silver"}
 )
-@dlt.expect_or_drop("valid_mapping", "menu_item_id IS NOT NULL AND ingredient_id IS NOT NULL")
+@dp.expect_or_drop("valid_mapping", "menu_item_id IS NOT NULL AND ingredient_id IS NOT NULL")
 def stg_menu_item_ingredients():
     return (
-        dlt.read("bronze_menu_item_ingredients")
+        spark.read.table("bronze_menu_item_ingredients")
         .select(
             col("menu_item_id"),
             col("ingredient_id"),

@@ -5,7 +5,7 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import (
     col, lit, when, explode, sequence, to_date, year, month, dayofmonth,
     dayofweek, dayofyear, weekofyear, quarter, date_format
@@ -18,7 +18,7 @@ from pyspark.sql.types import IntegerType
 
 # COMMAND ----------
 
-@dlt.table(
+@dp.materialized_view(
     name="dim_date",
     comment="Date dimension with calendar attributes",
     table_properties={"quality": "gold"}

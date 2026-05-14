@@ -6,22 +6,22 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import col, to_date
 from pyspark.sql.types import DoubleType
 
 # COMMAND ----------
 
-@dlt.table(
+@dp.materialized_view(
     name="stg_inventory",
     comment="Cleaned and typed inventory data",
     table_properties={"quality": "silver"}
 )
-@dlt.expect_or_drop("valid_inventory_record", "location_id IS NOT NULL AND ingredient_id IS NOT NULL")
-@dlt.expect("non_negative_quantity", "quantity_on_hand >= 0")
+@dp.expect_or_drop("valid_inventory_record", "location_id IS NOT NULL AND ingredient_id IS NOT NULL")
+@dp.expect("non_negative_quantity", "quantity_on_hand >= 0")
 def stg_inventory():
     return (
-        dlt.read("bronze_inventory")
+        spark.read.table("bronze_inventory")
         .select(
             col("inventory_id"),
             col("location_id"),

@@ -5,7 +5,7 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import (
     col, current_timestamp, current_date, year, month, dayofmonth
 )
@@ -13,15 +13,15 @@ from pyspark.sql.types import IntegerType
 
 # COMMAND ----------
 
-@dlt.table(
+@dp.materialized_view(
     name="fct_inventory_snapshot",
     comment="Current inventory status by location and ingredient",
     table_properties={"quality": "gold"}
 )
 def fct_inventory_snapshot():
-    inventory = dlt.read("int_inventory")
-    dim_location = dlt.read("dim_location").filter(col("is_current") == True)
-    dim_ingredient = dlt.read("dim_ingredient").filter(col("is_current") == True)
+    inventory = spark.read.table("int_inventory")
+    dim_location = spark.read.table("dim_location").filter(col("is_current") == True)
+    dim_ingredient = spark.read.table("dim_ingredient").filter(col("is_current") == True)
     
     return (
         inventory.alias("i")

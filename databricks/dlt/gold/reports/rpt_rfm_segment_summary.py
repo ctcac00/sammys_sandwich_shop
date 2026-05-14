@@ -5,7 +5,7 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import (
     col, count, avg, round as spark_round, sum as spark_sum
 )
@@ -13,12 +13,12 @@ from pyspark.sql.window import Window
 
 # COMMAND ----------
 
-@dlt.view(
+@dp.temporary_view(
     name="rpt_rfm_segment_summary",
     comment="RFM segmentation analysis"
 )
 def rpt_rfm_segment_summary():
-    fca = dlt.read("fct_customer_activity")
+    fca = spark.read.table("fct_customer_activity")
     
     return (
         fca

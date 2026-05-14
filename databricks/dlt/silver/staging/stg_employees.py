@@ -6,7 +6,7 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import (
     col, trim, lower, upper, initcap, to_date, coalesce, lit, when
 )
@@ -14,16 +14,16 @@ from pyspark.sql.types import DoubleType
 
 # COMMAND ----------
 
-@dlt.table(
+@dp.materialized_view(
     name="stg_employees",
     comment="Cleaned and typed employee data",
     table_properties={"quality": "silver"}
 )
-@dlt.expect_or_drop("valid_employee_id", "employee_id IS NOT NULL")
-@dlt.expect("valid_hire_date", "hire_date IS NOT NULL")
+@dp.expect_or_drop("valid_employee_id", "employee_id IS NOT NULL")
+@dp.expect("valid_hire_date", "hire_date IS NOT NULL")
 def stg_employees():
     return (
-        dlt.read("bronze_employees")
+        spark.read.table("bronze_employees")
         .select(
             col("employee_id"),
             initcap(trim(col("first_name"))).alias("first_name"),

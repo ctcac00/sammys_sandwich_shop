@@ -5,20 +5,20 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import (
     col, count, sum as spark_sum, countDistinct
 )
 
 # COMMAND ----------
 
-@dlt.view(
+@dp.temporary_view(
     name="rpt_inventory_value_by_location",
     comment="Inventory value breakdown by location"
 )
 def rpt_inventory_value_by_location():
-    fi = dlt.read("fct_inventory_snapshot")
-    dl = dlt.read("dim_location").filter(col("is_current") == True)
+    fi = spark.read.table("fct_inventory_snapshot")
+    dl = spark.read.table("dim_location").filter(col("is_current") == True)
     
     return (
         fi

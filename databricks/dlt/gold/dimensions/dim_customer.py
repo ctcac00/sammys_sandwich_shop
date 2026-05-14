@@ -5,7 +5,7 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import (
     col, lit, when, current_timestamp, current_date, floor, md5, to_date
 )
@@ -17,14 +17,14 @@ from pyspark.sql.types import StringType
 
 # COMMAND ----------
 
-@dlt.table(
+@dp.materialized_view(
     name="dim_customer",
     comment="Customer dimension with demographics and loyalty info",
     table_properties={"quality": "gold"}
 )
-@dlt.expect("valid_customer_sk", "customer_sk IS NOT NULL")
+@dp.expect("valid_customer_sk", "customer_sk IS NOT NULL")
 def dim_customer():
-    customers = dlt.read("int_customers")
+    customers = spark.read.table("int_customers")
     
     # Build customer dimension
     customer_dim = (

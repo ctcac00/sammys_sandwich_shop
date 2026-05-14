@@ -5,12 +5,12 @@
 
 # COMMAND ----------
 
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import col, md5
 
 # COMMAND ----------
 
-@dlt.table(
+@dp.materialized_view(
     name="dim_payment_method",
     comment="Payment method reference dimension",
     table_properties={"quality": "gold"}
